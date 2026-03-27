@@ -21,12 +21,12 @@ function Navbar() {
     <nav className="h-16 flex items-center justify-between px-6 border-b border-gray-100 bg-white relative z-50">
       <div className="flex items-center gap-8">
         <Link to="/" className="flex items-center gap-2">
-          <div className="flex items-center gap-1 group">
+          <div className="flex items-center group">
              <div className="w-8 h-8 bg-blue-600 rounded-lg relative flex items-center justify-center transition-transform group-hover:scale-110">
                 <div className="w-4 h-4 bg-white rounded-full" />
                 <div className="w-4 h-2 absolute -right-1 bottom-0 bg-blue-600 rounded-full" />
              </div>
-             <span className="text-2xl font-black tracking-tighter text-gray-900 ml-1">Quolors</span>
+             <span className="text-2xl font-black tracking-tighter text-gray-900 ml-1">olors</span>
           </div>
         </Link>
 
