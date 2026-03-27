@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { FiMenu, FiX, FiChevronDown, FiGrid, FiImage, FiMonitor, FiLayers, FiHeart } from 'react-icons/fi'
-import { FaPalette } from 'react-icons/fa'
+import { FaPalette, FaTwitter, FaInstagram, FaPinterest } from 'react-icons/fa'
 
 function Navbar() {
   const [isToolsOpen, setIsToolsOpen] = useState(false)
@@ -26,7 +26,7 @@ function Navbar() {
                 <div className="w-4 h-4 bg-white rounded-full" />
                 <div className="w-4 h-2 absolute -right-1 bottom-0 bg-blue-600 rounded-full" />
              </div>
-             <span className="text-2xl font-black tracking-tighter text-gray-900 ml-1">olors</span>
+             <span className="text-2xl font-black tracking-tighter text-gray-900 ">olors</span>
           </div>
         </Link>
 
@@ -108,6 +108,18 @@ function Navbar() {
             <button className="text-lg font-bold text-pink-500 px-4 py-3 text-left">
               Go Pro
             </button>
+            <hr className="my-4 border-gray-100" />
+            <div className="flex items-center justify-center gap-6 mt-10">
+              <a href="#" className="hover:text-gray-900 transition-colors">
+                <FaTwitter size={20} />
+              </a>
+              <a href="#" className="hover:text-gray-900 transition-colors">
+                <FaInstagram size={20} />
+              </a>
+              <a href="#" className="hover:text-gray-900 transition-colors">
+                <FaPinterest size={20} />
+              </a>
+            </div>
           </div>
         </div>
       )}
