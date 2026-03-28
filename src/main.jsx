@@ -3,6 +3,10 @@ import ReactDOM from 'react-dom/client'
 import './index.css'
 import App from './App'
 import { RouterProvider, createBrowserRouter } from 'react-router-dom'
+import { Provider } from 'react-redux'
+import { store } from './store'
+import { ToastProvider } from './context/ToastContext'
+import { initializePalette } from './store/slices/paletteSlice'
 import Home from './pages/Home'
 import Generate from './pages/Generate'
 import Favorites from './pages/Favorites'
@@ -11,6 +15,9 @@ import Contrast from './pages/Contrast'
 import Visualizer from './pages/Visualizer'
 import ImagePicker from './pages/ImagePicker'
 import GradientMaker from './pages/GradientMaker'
+
+// Initialize the palette history when the app starts
+store.dispatch(initializePalette())
 
 const router = createBrowserRouter([
   {
@@ -55,6 +62,10 @@ const router = createBrowserRouter([
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <RouterProvider router={router} />
+    <Provider store={store}>
+      <ToastProvider>
+        <RouterProvider router={router} />
+      </ToastProvider>
+    </Provider>
   </React.StrictMode>,
 )

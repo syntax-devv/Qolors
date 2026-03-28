@@ -1,20 +1,35 @@
 import React, { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { FiMenu, FiX, FiChevronDown, FiGrid, FiImage, FiMonitor, FiLayers, FiHeart } from 'react-icons/fi'
-import { FaPalette, FaTwitter, FaInstagram, FaPinterest } from 'react-icons/fa'
+import { useDispatch } from 'react-redux'
+import { openAuthModal } from '../store/slices/uiSlice'
+import {
+  Menu,
+  X,
+  ChevronDown,
+  Grid,
+  Image,
+  Monitor,
+  Layers,
+  Heart,
+  Palette,
+  MessageCircle,
+  Camera,
+  Bookmark
+} from 'lucide-react'
 
 function Navbar() {
+  const dispatch = useDispatch()
   const [isToolsOpen, setIsToolsOpen] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const location = useLocation()
 
   const tools = [
-    { name: 'Palette Generator', icon: <FaPalette size={18} />, path: '/generate' },
-    { name: 'Explore Palettes', icon: <FiGrid size={18} />, path: '/explore' },
-    { name: 'Color Extractor', icon: <FiImage size={18} />, path: '/picker' },
-    { name: 'Contrast Checker', icon: <FiGrid size={18} />, path: '/contrast' },
-    { name: 'Visualizer', icon: <FiMonitor size={18} />, path: '/visualizer' },
-    { name: 'Gradient Maker', icon: <FiLayers size={18} />, path: '/gradient' },
+    { name: 'Palette Generator', icon: <Palette size={18} />, path: '/generate' },
+    { name: 'Explore Palettes', icon: <Grid size={18} />, path: '/explore' },
+    { name: 'Color Extractor', icon: <Image size={18} />, path: '/picker' },
+    { name: 'Contrast Checker', icon: <Grid size={18} />, path: '/contrast' },
+    { name: 'Visualizer', icon: <Monitor size={18} />, path: '/visualizer' },
+    { name: 'Gradient Maker', icon: <Layers size={18} />, path: '/gradient' },
   ]
 
   return (
@@ -30,18 +45,19 @@ function Navbar() {
           </div>
         </Link>
 
-        {/* Desktop Tools Dropdown */}
         <div className="hidden md:flex items-center gap-8">
             <div className="relative">
                 <button
                     onMouseEnter={() => setIsToolsOpen(true)}
+                    onMouseLeave={() => setIsToolsOpen(false)}
                     className="flex items-center gap-1 text-sm font-bold text-gray-600 hover:text-gray-900 transition-colors py-4"
                 >
-                    Tools <FiChevronDown size={14} className={`transition-transform ${isToolsOpen ? 'rotate-180' : ''}`} />
+                    Tools <ChevronDown size={14} className={`transition-transform ${isToolsOpen ? 'rotate-180' : ''}`} />
                 </button>
 
                 {isToolsOpen && (
                     <div
+                        onMouseEnter={() => setIsToolsOpen(true)}
                         onMouseLeave={() => setIsToolsOpen(false)}
                         className="absolute top-full left-0 w-64 bg-white rounded-2xl shadow-2xl border border-gray-100 p-2 mt-[-8px]"
                     >
@@ -72,6 +88,7 @@ function Navbar() {
 
       <div className="flex items-center gap-4">
         <button
+            onClick={() => dispatch(openAuthModal())}
             className="px-4 py-2 text-sm font-bold bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-lg shadow-blue-50 active:scale-95"
         >
             Get Started
@@ -81,11 +98,9 @@ function Navbar() {
             className="md:hidden p-2 text-gray-600"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
         >
-            {isMobileMenuOpen ? <FiX size={24} /> : <FiMenu size={24} />}
+            {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
       </div>
-
-      {/* Mobile Menu */}
       {isMobileMenuOpen && (
         <div className="absolute top-full left-0 right-0 bg-white border-b border-gray-100 shadow-xl md:hidden max-h-[80vh] overflow-y-auto">
           <div className="p-4 flex flex-col gap-2">
@@ -111,13 +126,13 @@ function Navbar() {
             <hr className="my-4 border-gray-100" />
             <div className="flex items-center justify-center gap-6 mt-10">
               <a href="#" className="hover:text-gray-900 transition-colors">
-                <FaTwitter size={20} />
+                <MessageCircle size={20} />
               </a>
               <a href="#" className="hover:text-gray-900 transition-colors">
-                <FaInstagram size={20} />
+                <Camera size={20} />
               </a>
               <a href="#" className="hover:text-gray-900 transition-colors">
-                <FaPinterest size={20} />
+                <Bookmark size={20} />
               </a>
             </div>
           </div>
