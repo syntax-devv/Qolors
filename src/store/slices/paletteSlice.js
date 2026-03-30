@@ -48,6 +48,10 @@ const paletteSlice = createSlice({
       state.theoryRule = action.payload;
     },
 
+    setPalette: (state, action) => {
+      state.colors = action.payload;
+    },
+
     generatePalette: (state) => {
       const lockedColors = state.colors.filter(c => c.locked);
       const baseColor = lockedColors.length > 0
@@ -158,6 +162,11 @@ const paletteSlice = createSlice({
       pushHistory(state);
     },
 
+    clearHistory: (state) => {
+      state.history = [JSON.parse(JSON.stringify(state.colors))];
+      state.pointer = 0;
+    },
+
     undo: (state) => {
       if (state.pointer > 0) {
         state.pointer--;
@@ -177,6 +186,7 @@ const paletteSlice = createSlice({
 export const {
   initializePalette,
   setTheoryRule,
+  setPalette,
   generatePalette,
   toggleLock,
   updateColor,
@@ -184,6 +194,7 @@ export const {
   collapseDragHistory,
   addColumn,
   removeColumn,
+  clearHistory,
   undo,
   redo,
 } = paletteSlice.actions;

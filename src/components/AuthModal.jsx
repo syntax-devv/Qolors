@@ -2,14 +2,32 @@ import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Search, Globe } from 'lucide-react';
-import { closeAuthModal, openAuthModal } from '../store/slices/uiSlice';
+import { closeAuthModal, login } from '../store/slices/uiSlice';
+import { supabase } from '../services/supabase';
 
 const AuthModal = () => {
   const dispatch = useDispatch();
   const isOpen = useSelector((state) => state.ui.isAuthModalOpen);
 
   const handleSocialLogin = async (provider) => {
-    dispatch(closeAuthModal());
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: provider.toLowerCase(),
+        options: {
+          redirectTo: window.location.origin,
+        },
+      });
+
+      if (error) {
+        console.error(`Error signing in with ${provider}:`, error);
+        return;
+      }
+
+      // The auth state change will be handled by the auth listener
+      console.log(`Signing in with ${provider}...`);
+    } catch (error) {
+      console.error(`Unexpected error with ${provider}:`, error);
+    }
   };
 
   if (!isOpen) return null;

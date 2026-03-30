@@ -5,7 +5,7 @@ import {
   Search,
   Image,
   CheckCircle,
-  Heart,
+  Save,
 } from 'lucide-react'
 
 import FeatureCard from '../components/FeatureCard'
@@ -109,7 +109,7 @@ const Home = () => {
                 </div>
                 <div className="px-4 pb-2 flex items-center justify-between">
                   <span className="font-black text-[10px] text-gray-300 uppercase tracking-widest">Trending #{100 + i}</span>
-                  <Heart className="text-gray-200 group-hover:text-red-400 transition-colors" size={16} />
+                  <Save className="text-gray-200 group-hover:text-green-400 transition-colors" size={16} />
                 </div>
               </div>
             ))}

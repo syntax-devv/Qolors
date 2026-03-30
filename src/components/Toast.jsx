@@ -22,14 +22,14 @@ const Toast = ({ message, type = 'success', duration = 3000, onClose }) => {
   }
 
   const colors = {
-    success: 'bg-green-500 text-white',
-    error: 'bg-red-500 text-white',
-    info: 'bg-blue-500 text-white'
+    success: 'bg-black text-white',
+    error: 'bg-black text-white',
+    info: 'bg-black text-white'
   }
 
   return (
     <div
-      className={`fixed z-1000 top-4 right-4 flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg transition-all duration-300 transform ${
+      className={`fixed z-1000 bottom-4 right-4 flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg transition-all duration-300 transform ${
         colors[type]
       } ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-2 opacity-0'}`}
     >

@@ -11,6 +11,8 @@ import Home from './pages/Home'
 import Generate from './pages/Generate'
 import Favorites from './pages/Favorites'
 import Explore from './pages/Explore'
+import Settings from './pages/Settings'
+import Notifications from './pages/Notifications'
 import Contrast from './pages/Contrast'
 import Visualizer from './pages/Visualizer'
 import ImagePicker from './pages/ImagePicker'
@@ -33,12 +35,20 @@ const router = createBrowserRouter([
         element: <Generate />
       },
       {
-        path: "/favourite",
+        path: "/favorites",
         element: <Favorites />
       },
       {
         path: "/explore",
         element: <Explore />
+      },
+      {
+        path: "/settings",
+        element: <Settings />
+      },
+      {
+        path: "/notifications",
+        element: <Notifications />
       },
       {
         path: "/contrast",

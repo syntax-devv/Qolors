@@ -1,13 +1,16 @@
 import React from 'react'
 import { Outlet } from 'react-router-dom'
 import Navbar from './components/Navbar'
+import AuthProvider from './components/AuthProvider'
 
 function App() {
 	return (
-		<div className="app">
-			<Navbar />
-			<Outlet />
-		</div>
+		<AuthProvider>
+			<div className="app">
+				<Navbar />
+				<Outlet />
+			</div>
+		</AuthProvider>
 	)
 }
 
