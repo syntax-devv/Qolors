@@ -1,7 +1,9 @@
 import React, { useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { useAuth } from '../components/AuthProvider'
-import { openAuthModal } from '../store/slices/uiSlice'
+import { openAuthModal, logout } from '../store/slices/uiSlice'
+import { supabase } from '../services/supabase'
+import AuthModal from '../components/AuthModal'
 import {
   User,
   Palette,
@@ -168,8 +170,9 @@ const Settings = () => {
 
             <div className="pt-8 border-t border-gray-200">
               <button
-                onClick={() => {
-                  // Handle logout
+                onClick={async () => {
+                  await supabase.auth.signOut()
+                  dispatch(logout())
                 }}
                 className="flex items-center gap-3 p-4 rounded-lg hover:bg-red-50 transition-colors cursor-pointer group w-full"
               >
@@ -180,6 +183,7 @@ const Settings = () => {
           </div>
         </div>
       </div>
+      <AuthModal />
     </div>
   )
 }

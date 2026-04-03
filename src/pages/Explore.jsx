@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDispatch, useSelector } from 'react-redux';
 import { Plus, Heart, ExternalLink } from 'lucide-react';
@@ -8,6 +8,7 @@ import { useToast } from '../context/ToastContext';
 import { Search, Save, Filter } from 'lucide-react';
 import { setPalette } from '../store/slices/paletteSlice';
 import { openAuthModal } from '../store/slices/uiSlice';
+import AuthModal from '../components/AuthModal';
 
 
 const EXPLORE_PALETTES = [
@@ -202,6 +203,7 @@ function Explore() {
         isAuthenticated={isAuthenticated}
         showNotification={addToast}
       />
+      <AuthModal />
     </div>
   );
 }

@@ -15,6 +15,7 @@ import {
   updateCollectionName
 } from '../store/slices/favoritesSlice';
 import { useToast } from '../context/ToastContext';
+import PaletteCard from '../components/PaletteCard';
 import CreatePaletteModal from '../components/CreatePaletteModal';
 import { useAuth } from '../components/AuthProvider';
 

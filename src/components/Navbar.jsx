@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { useDispatch } from 'react-redux'
 import { openAuthModal, logout } from '../store/slices/uiSlice'
 import { useAuth } from './AuthProvider'
+import { supabase } from '../services/supabase'
 import {
   Menu,
   X,
@@ -178,7 +179,8 @@ function Navbar() {
                 </Link>
                 <hr className="my-2 border-gray-100" />
                 <button
-                  onClick={() => {
+                  onClick={async () => {
+                    await supabase.auth.signOut()
                     dispatch(logout())
                     setIsUserMenuOpen(false)
                   }}
@@ -251,7 +253,8 @@ function Navbar() {
                   Saved Palettes
                 </Link>
                 <button
-                  onClick={() => {
+                  onClick={async () => {
+                    await supabase.auth.signOut()
                     dispatch(logout())
                     setIsMobileMenuOpen(false)
                   }}

@@ -62,7 +62,7 @@ const generatePaletteName = (colors) => {
       if (hue >= 270 && hue < 330) return 'Berry';
       return 'Twilight';
     } catch {
-      return 'Color';
+      return 'Untitled';
     }
   });
   
