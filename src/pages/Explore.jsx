@@ -146,8 +146,7 @@ function Explore() {
   }, [search, filter, addToast]);
 
   useEffect(() => {
-    const timer = setTimeout(() => { fetchPalettes(); }, 500); 
-    return () => clearTimeout(timer);
+    fetchPalettes();
   }, [fetchPalettes]);
 
   return (
