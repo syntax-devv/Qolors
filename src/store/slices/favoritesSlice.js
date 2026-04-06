@@ -67,6 +67,50 @@ export const fetchUserPalettes = createAsyncThunk(
   }
 );
 
+export const createCollectionThunk = createAsyncThunk(
+  'favorites/createCollectionThunk',
+  async (collectionName, { getState, rejectWithValue }) => {
+    const { ui } = getState();
+    if (!ui.isAuthenticated) return rejectWithValue('Authentication required');
+    
+    try {
+      const { data, error } = await supabase
+        .from('collections')
+        .insert({
+          user_id: ui.user.id,
+          name: collectionName.trim()
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  }
+);
+
+export const deleteCollectionThunk = createAsyncThunk(
+  'favorites/deleteCollectionThunk',
+  async (collectionId, { getState, rejectWithValue }) => {
+    const { ui } = getState();
+    if (!ui.isAuthenticated) return rejectWithValue('Authentication required');
+    
+    try {
+      const { error } = await supabase
+        .from('collections')
+        .delete()
+        .eq('id', collectionId);
+
+      if (error) throw error;
+      return collectionId;
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  }
+);
+
 export const addPaletteThunk = createAsyncThunk(
   'favorites/addPaletteThunk',
   async (palette, { getState, dispatch, rejectWithValue }) => {
@@ -453,6 +497,23 @@ const favoritesSlice = createSlice({
       .addCase(fetchUserPalettes.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+      })
+      .addCase(createCollectionThunk.fulfilled, (state, action) => {
+        const newCollection = action.payload;
+        state.collections.push({
+          id: newCollection.id,
+          name: newCollection.name,
+          date: newCollection.created_at
+        });
+        localStorage.setItem('qolors_favorites', JSON.stringify(state));
+      })
+      .addCase(deleteCollectionThunk.fulfilled, (state, action) => {
+        const collectionId = action.payload;
+        state.collections = state.collections.filter(c => c.id !== collectionId);
+        state.palettes = state.palettes.filter(p => 
+          !p.collectionIds?.includes(collectionId) && p.collectionId !== collectionId
+        );
+        localStorage.setItem('qolors_favorites', JSON.stringify(state));
       })
       .addCase(addPaletteThunk.fulfilled, (state, action) => {
         if (action.payload) {

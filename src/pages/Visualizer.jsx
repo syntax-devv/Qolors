@@ -195,8 +195,6 @@ function Visualizer() {
   const [device, setDevice] = useState('desktop');
   const [searchParams] = useSearchParams();
   const [activePalette, setActivePalette] = useState(null);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const addToast = useToast();
 
   useEffect(() => {
     const paletteName = searchParams.get('palette');

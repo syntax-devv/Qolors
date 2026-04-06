@@ -142,10 +142,10 @@ const AngleDial = ({ angle, onChange }) => {
     </div>
   );
 };
-const GradientMaker = () => {
+
+const GradientMaker = () => {
   const [colors, setColors] = useState(['#f72585', '#4361ee']);
   const [angle, setAngle] = useState(90);
-  const [showCSS, setShowCSS] = useState(true);
   const addToast = useToast();
 
   const gradientCSS = useMemo(() => {

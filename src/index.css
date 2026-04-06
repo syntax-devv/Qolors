@@ -28,7 +28,6 @@
     @apply font-display tracking-tight;
   }
   
-  /* Uncodixify Scrollbar */
   ::-webkit-scrollbar {
     width: 6px;
     height: 6px;

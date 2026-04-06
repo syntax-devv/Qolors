@@ -5,15 +5,13 @@ import {
   Bell,
   Heart,
   Palette,
-  User,
   X,
-  Check,
   Clock,
   Star
 } from 'lucide-react'
 
 const Notifications = () => {
-  const { isAuthenticated, user } = useAuth()
+  const { isAuthenticated } = useAuth()
   const [filter, setFilter] = useState('all')
 
   if (!isAuthenticated) {

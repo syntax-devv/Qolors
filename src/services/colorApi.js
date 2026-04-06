@@ -52,7 +52,6 @@ const colorNames = {
   '#3498DB': 'Peter River',
   '#2980B9': 'Belize Hole',
   '#5DADE2': 'Sky Blue',
-  '#3498DB': 'Blue Ribbon',
   
   // Purples
   '#800080': 'Purple',
@@ -78,13 +77,12 @@ const colorNames = {
   '#6B46C1': 'Royal Purple',
   
   // Pinks
-  '#FFC0CB': 'Pink',
+  '#FFC0CB': 'Baby Pink',
   '#FF69B4': 'Hot Pink',
   '#FF1493': 'Deep Pink',
   '#C71585': 'Medium Violet Red',
   '#DB7093': 'Pale Violet Red',
   '#FFB6C1': 'Light Pink',
-  '#FFC0CB': 'Baby Pink',
   '#F8BBD0': 'Pink Rose',
   
   // Browns

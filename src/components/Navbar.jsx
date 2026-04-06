@@ -73,12 +73,12 @@ function Navbar({ onToggleSidebar }) {
 
       <div className="flex items-center gap-3">
         <div className="hidden sm:flex items-center gap-2 pr-2 mr-2 border-r border-gray-100">
-          <button className="p-1.5 text-gray-400 hover:text-black hover:bg-gray-50 rounded-md transition-colors">
+          <Link to="/notifications" className="p-1.5 text-gray-400 hover:text-black hover:bg-gray-50 rounded-md transition-colors">
              <Bell size={18} />
-          </button>
-          <button className="p-1.5 text-gray-400 hover:text-black hover:bg-gray-50 rounded-md transition-colors">
+          </Link>
+          <Link to="/settings" className="p-1.5 text-gray-400 hover:text-black hover:bg-gray-50 rounded-md transition-colors">
              <Settings size={18} />
-          </button>
+          </Link>
         </div>
 
         {isAuthenticated && user ? (

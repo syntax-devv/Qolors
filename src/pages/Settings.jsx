@@ -8,8 +8,6 @@ import {
   User,
   Palette,
   Bell,
-  Moon,
-  Sun,
   Globe,
   Lock,
   CreditCard,
@@ -20,7 +18,7 @@ import {
 
 const Settings = () => {
   const dispatch = useDispatch()
-  const { isAuthenticated, user } = useAuth()
+  const { isAuthenticated } = useAuth()
   const [darkMode, setDarkMode] = useState(false)
   const [notifications, setNotifications] = useState(true)
 

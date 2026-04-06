@@ -7,7 +7,9 @@ import {
   createCollection, 
   deleteCollection, 
   clearAllPalettes,
-  updateCollectionName
+  updateCollectionName,
+  createCollectionThunk,
+  deleteCollectionThunk
 } from '../store/slices/favoritesSlice';
 import { useToast } from '../context/ToastContext';
 import PaletteCard from '../components/PaletteCard';
@@ -108,14 +110,20 @@ function Collections() {
     } else if (collectionId) {
       setActiveCollectionId(collectionId);
     }
-  }, [location.search]);
+  }, [location.search, location.pathname]);
 
   const handleCreate = (e) => {
     e.preventDefault();
     if (newName.trim()) {
-      dispatch(createCollection(newName.trim()));
-      setNewName('');
-      setIsCreating(false);
+      dispatch(createCollectionThunk(newName.trim()))
+        .unwrap()
+        .then(() => {
+          setNewName('');
+          setIsCreating(false);
+        })
+        .catch((error) => {
+          addToast(error.message || 'Failed to create collection', 'error');
+        });
     }
   };
 
@@ -245,10 +253,7 @@ function Collections() {
                     count={palettes.filter(p => (p.collectionIds || (p.collectionId ? [p.collectionId] : [])).includes(c.id)).length}
                     isActive={activeCollectionId === c.id}
                     onClick={() => setActiveCollectionId(c.id)}
-                    onDelete={() => {
-                      dispatch(deleteCollection(c.id));
-                      if (activeCollectionId === c.id) setActiveCollectionId(null);
-                    }}
+                    onDelete={() => handleDelete(c.id)}
                   />
                 ))}
                 {isCreating ? (

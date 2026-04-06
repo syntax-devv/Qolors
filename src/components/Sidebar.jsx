@@ -9,8 +9,12 @@ import {
   Heart,
   Package
 } from 'lucide-react';
+import { useSelector } from 'react-redux';
 
 const Sidebar = ({ isOpen, onClose }) => {
+  const location = useLocation();
+  const { collections, palettes } = useSelector(state => state.favorites);
+
   React.useEffect(() => {
     const handleEscape = (e) => {
       if (e.key === 'Escape' && isOpen) onClose();
@@ -18,8 +22,6 @@ const Sidebar = ({ isOpen, onClose }) => {
     window.addEventListener('keydown', handleEscape);
     return () => window.removeEventListener('keydown', handleEscape);
   }, [isOpen, onClose]);
-
-  const location = useLocation();
 
   const menuItems = [
     { name: 'Generator', icon: <Palette size={16} />, path: '/generate' },
@@ -29,11 +31,28 @@ const Sidebar = ({ isOpen, onClose }) => {
 
   const secondaryItems = [
     { name: 'Favorites', icon: <Heart size={16} />, path: '/collections?lib=favorites' },
-    { name: 'Archive', icon: <Package size={16} />, path: '/archive' },
   ];
 
+  const customCollections = collections
+    .filter(c => c.id !== 'favorites-collection')
+    .map(collection => {
+      const paletteCount = palettes.filter(p => 
+        (p.collectionIds || (p.collectionId ? [p.collectionId] : [])).includes(collection.id)
+      ).length;
+      
+      return {
+        name: collection.name,
+        icon: <Package size={16} />,
+        path: `/collections?lib=${collection.id}`,
+        count: paletteCount
+      };
+    })
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
+
   const NavLink = ({ item }) => {
-    const isActive = location.pathname === item.path;
+    const isActive = location.pathname === item.path || 
+                     (item.path.includes('?') && location.pathname === '/collections' && location.search.includes(`lib=${item.path.split('?lib=')[1]}`));
     return (
       <Link
         to={item.path}
@@ -46,7 +65,14 @@ const Sidebar = ({ isOpen, onClose }) => {
         <span className={isActive ? 'text-black' : 'text-gray-400'}>
           {item.icon}
         </span>
-        {item.name}
+        <div className="flex-1 flex items-center justify-between">
+          <span>{item.name}</span>
+          {item.count !== undefined && (
+            <span className="text-[10px] font-bold bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded">
+              {item.count}
+            </span>
+          )}
+        </div>
       </Link>
     );
   };
@@ -100,6 +126,17 @@ const Sidebar = ({ isOpen, onClose }) => {
               {secondaryItems.map(item => <NavLink key={item.path} item={item} />)}
             </div>
           </div>
+
+          {customCollections.length > 0 && (
+            <div>
+              <div className="px-3 mb-2">
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Collections</span>
+              </div>
+              <div className="space-y-1">
+                {customCollections.map(item => <NavLink key={item.path} item={item} />)}
+              </div>
+            </div>
+          )}
         </nav>
 
         <div className="p-4 border-t border-gray-50">
