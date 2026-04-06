@@ -29,9 +29,9 @@ const Toast = ({ message, type = 'success', duration = 3000, onClose }) => {
 
   return (
     <div
-      className={`fixed z-1000 bottom-4 right-4 flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg transition-all duration-300 transform ${
-        colors[type]
-      } ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-2 opacity-0'}`}
+      className={`flex items-center w-fit gap-3 px-5 py-4 rounded-2xl shadow-[0px_10px_40px_rgba(23,28,31,0.08)] bg-black text-white border border-gray-800 backdrop-blur-sm min-w-[100px] transition-all duration-500 transform ${
+        isVisible ? 'translate-y-0 opacity-100 scale-100' : 'translate-y-12 opacity-0'
+      }`}
     >
       {icons[type]}
       <span className="text-sm font-medium">{message}</span>

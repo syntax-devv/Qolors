@@ -198,158 +198,106 @@ function Visualizer() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const addToast = useToast();
 
-  // Load palette from URL if specified
   useEffect(() => {
     const paletteName = searchParams.get('palette');
     if (paletteName) {
-      // Find palette in our preset collection
       const palette = PRESET_PALETTES.find(p => p.name.toLowerCase().replace(/\s+/g, '-') === paletteName);
-      if (palette) {
-        loadPresetPalette(palette.colors);
-        setActivePalette(palette.name);
-      }
+      if (palette) { loadPresetPalette(palette.colors); setActivePalette(palette.name); }
     }
-  }, [searchParams]); // Only run when searchParams change
+  }, [searchParams]);
 
-  // Check if current colors match any preset palette (but only if we have colors)
   useEffect(() => {
     if (colors.length > 0) {
-      const currentPalette = PRESET_PALETTES.find(p => 
-        p.colors.every((color, i) => color === colors[i]?.hex)
-      );
+      const currentPalette = PRESET_PALETTES.find(p => p.colors.every((color, i) => color === colors[i]?.hex));
       setActivePalette(currentPalette?.name || null);
     }
-  }, [colors]); // Only run when colors change and we have colors
+  }, [colors]);
 
   const loadPresetPalette = useCallback((paletteColors) => {
-    const paletteObj = paletteColors.map(hex => ({
-      hex,
-      locked: false,
-      id: Math.random().toString(36).substr(2, 9),
-    }));
+    const paletteObj = paletteColors.map(hex => ({ hex, locked: false, id: Math.random().toString(36).substr(2, 9), }));
     dispatch(setPalette(paletteObj));
   }, [dispatch]);
 
   const loadPresetPaletteWithURL = useCallback((paletteColors, paletteName) => {
     loadPresetPalette(paletteColors);
     setActivePalette(paletteName);
-    // Update URL to reflect current palette
     const newUrl = `${window.location.pathname}?palette=${paletteName.toLowerCase().replace(/\s+/g, '-')}`;
     window.history.replaceState({}, '', newUrl);
   }, [loadPresetPalette]);
 
-  const handleSavePalette = (editedColors) => {
-    dispatch(setPalette(editedColors));
-    addToast('Palette updated successfully!', 'success');
-  };
-
   return (
-    <div className="min-h-screen bg-[#FDFDFD]">
-      <main className="max-w-7xl mx-auto px-8 py-20">
-        <header className="flex flex-col md:flex-row items-center justify-between gap-8 mb-16">
-          <div className="text-center md:text-left">
-            <h1 className="text-6xl font-black text-gray-900 tracking-tight mb-4">Palette Visualizer</h1>
-            <p className="text-xl font-bold text-gray-400">Check your colors on real designs in real-time</p>
-          </div>
-          <div className="flex bg-white rounded-2xl border border-gray-100 p-1.5 shadow-sm">
-            <button
-                onClick={() => setDevice('desktop')}
-                className={`p-4 rounded-xl transition-all ${device === 'desktop' ? 'bg-gray-900 text-white shadow-lg' : 'text-gray-400 hover:text-gray-900'}`}
-            >
-                <Monitor size={24} />
-            </button>
-            <button
-                onClick={() => setDevice('mobile')}
-                className={`p-4 rounded-xl transition-all ${device === 'mobile' ? 'bg-gray-900 text-white shadow-lg' : 'text-gray-400 hover:text-gray-900'}`}
-            >
-                <Smartphone size={24} />
-            </button>
-          </div>
-        </header>
-
-        <div className="grid lg:grid-cols-4 gap-6">
-            {/* Current Palette Sidebar with Suggestions */}
-            <aside className="lg:col-span-1 bg-white p-8 rounded-[2rem] border border-gray-100 shadow-xl shadow-gray-50 flex flex-col gap-6 self-start">
-                <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                        <Palette size={20} className="text-blue-600" />
-                        <span className="text-sm font-black text-gray-900 uppercase tracking-widest">Active Palette</span>
-                    </div>
-                    <button
-                        onClick={() => setIsEditModalOpen(true)}
-                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors group"
-                        title="Edit palette"
-                    >
-                        <Edit3 size={16} className="text-gray-400 group-hover:text-gray-600" />
-                    </button>
-                </div>
-                <div className="flex flex-col gap-4">
-                    {colors.map((c, i) => (
-                        <div key={i} className="flex items-center gap-4 group">
-                            <div className="w-12 h-12 rounded-xl shadow-inner" style={{ backgroundColor: c.hex }} />
-                            <div className="flex flex-col">
-                                <span className="text-sm font-bold text-gray-900 uppercase tracking-tighter">{c.hex}</span>
-                                <span className="text-[10px] font-bold text-gray-300 uppercase tracking-widest">Color {i + 1}</span>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-                
-                {/* Palette Suggestions */}
-                <div className="border-t border-gray-100 pt-6">
-                    <div className="flex items-center gap-2 mb-4">
-                        <Sparkles size={20} className="text-purple-600" />
-                        <span className="text-sm font-black text-gray-900 uppercase tracking-widest">Try These Palettes</span>
-                    </div>
-                    <div className="flex flex-col gap-3">
-                        {PRESET_PALETTES.map((palette, i) => {
-                            const isActive = activePalette === palette.name;
-                            return (
-                                <button
-                                    key={i}
-                                    onClick={() => !isActive && loadPresetPaletteWithURL(palette.colors, palette.name)}
-                                    disabled={isActive}
-                                    className={`group flex flex-col gap-2 p-3 rounded-xl transition-all text-left w-full ${
-                                        isActive 
-                                            ? 'bg-purple-50 border-2 border-purple-200 cursor-not-allowed' 
-                                            : 'hover:bg-gray-50 cursor-pointer'
-                                    }`}
-                                >
-                                    <div className="flex">
-                                        {palette.colors.map((color, j) => (
-                                            <div
-                                                key={j}
-                                                className="w-8 h-10 shadow-sm"
-                                                style={{ backgroundColor: color }}
-                                            />
-                                        ))}
-                                    </div>
-                                    <div className="flex items-center justify-between">
-                                        <span className={`text-sm font-bold transition-colors ${
-                                            isActive 
-                                                ? 'text-purple-700' 
-                                                : 'text-gray-700 group-hover:text-gray-900'
-                                        }`}>
-                                            {palette.name}
-                                        </span>
-                                        {isActive && (
-                                            <div className="w-2 h-2 rounded-full bg-purple-500 flex-shrink-0"></div>
-                                        )}
-                                    </div>
-                                </button>
-                            );
-                        })}
-                    </div>
-                </div>
-            </aside>
-
-            {/* Preview Area */}
-            <section className="lg:col-span-3 flex justify-center">
-                <div className={`transition-all duration-500 ${device === 'mobile' ? 'max-w-sm w-full' : 'w-full'}`}>
-                    <MockLandingPage colors={colors} device={device} />
-                </div>
-            </section>
+    <div className="min-h-screen bg-white">
+      <header className="max-w-7xl mx-auto px-6 py-12 border-b border-gray-50 mb-12 flex flex-col md:flex-row items-center justify-between gap-6">
+        <div>
+          <h1 className="text-3xl font-bold text-black tracking-tight mb-2">Palette Visualizer</h1>
+          <p className="text-[15px] font-medium text-gray-500">Visualize your palette on functional, real-world components.</p>
         </div>
+        <div className="flex bg-gray-50 rounded-lg p-1 border border-gray-100">
+          <button onClick={() => setDevice('desktop')} className={`px-4 py-2 rounded-md transition-all text-sm font-bold flex items-center gap-2 ${device === 'desktop' ? 'bg-white text-black shadow-sm' : 'text-gray-400 hover:text-black'}`}>
+            <Monitor size={16} /> Desktop
+          </button>
+          <button onClick={() => setDevice('mobile')} className={`px-4 py-2 rounded-md transition-all text-sm font-bold flex items-center gap-2 ${device === 'mobile' ? 'bg-white text-black shadow-sm' : 'text-gray-400 hover:text-black'}`}>
+            <Smartphone size={16} /> Mobile
+          </button>
+        </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto px-6 pb-24 grid lg:grid-cols-4 gap-12">
+        {/* Workspace Sidebar */}
+        <aside className="lg:col-span-1 space-y-10 self-start">
+          <div className="bg-white p-6 rounded-lg border border-gray-100">
+             <div className="flex items-center justify-between mb-6 border-b border-gray-50 pb-4">
+                <h3 className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Active Palette</h3>
+                <button onClick={() => setIsEditModalOpen(true)} className="text-[11px] font-bold text-black hover:underline uppercase tracking-wider">Edit</button>
+             </div>
+             <div className="space-y-4">
+                {colors.map((c, i) => (
+                  <div key={i} className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-md border border-gray-50 shadow-inner" style={{ backgroundColor: c.hex }} />
+                    <div className="flex flex-col">
+                      <span className="text-[13px] font-mono font-bold text-black uppercase">{c.hex}</span>
+                      <span className="text-[10px] font-bold text-gray-300 uppercase tracking-wider">Stop {i + 1}</span>
+                    </div>
+                  </div>
+                ))}
+             </div>
+          </div>
+
+          <div className="bg-white p-6 rounded-lg border border-gray-100">
+             <h3 className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-6">Presets</h3>
+             <div className="space-y-3">
+                {PRESET_PALETTES.map((palette, i) => {
+                   const isActive = activePalette === palette.name;
+                   return (
+                      <button 
+                        key={i} 
+                        onClick={() => !isActive && loadPresetPaletteWithURL(palette.colors, palette.name)}
+                        className={`w-full text-left p-2 rounded-md border transition-all ${
+                          isActive ? 'border-black bg-gray-50' : 'border-transparent hover:bg-gray-50'
+                        }`}
+                      >
+                         <div className="flex h-6 w-full mb-2">
+                            {palette.colors.map((color, j) => (
+                              <div key={j} className="flex-1 first:rounded-l-sm last:rounded-r-sm" style={{ backgroundColor: color }} />
+                            ))}
+                         </div>
+                         <div className="flex items-center justify-between">
+                            <span className="text-[12px] font-bold text-black">{palette.name}</span>
+                            {isActive && <div className="w-1.5 h-1.5 rounded-full bg-black" />}
+                         </div>
+                      </button>
+                   );
+                })}
+             </div>
+          </div>
+        </aside>
+
+        {/* Viewport Area */}
+        <section className="lg:col-span-3">
+           <div className={`mx-auto transition-all duration-500 overflow-hidden ${device === 'mobile' ? 'max-w-sm border-[12px] border-black rounded-[40px] shadow-2xl h-[700px]' : 'w-full bg-white rounded-lg border border-gray-100 overflow-hidden'}`}>
+              <MockLandingPage colors={colors} device={device} />
+           </div>
+        </section>
       </main>
     </div>
   );

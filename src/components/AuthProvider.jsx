@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { login, logout } from '../store/slices/uiSlice';
+import { fetchUserPalettes } from '../store/slices/favoritesSlice';
 import { supabase } from '../services/supabase';
 
 const AuthContext = createContext();
@@ -29,6 +30,7 @@ export const AuthProvider = ({ children }) => {
             avatar: session.user.user_metadata?.avatar_url,
             provider: session.user.app_metadata?.provider
           }));
+          dispatch(fetchUserPalettes());
         } else if (event === 'SIGNED_OUT') {
           dispatch(logout());
         }

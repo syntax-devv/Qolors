@@ -27,143 +27,77 @@ function ImagePicker() {
   const currentImage = images[currentImageIndex];
 
   const quantizeColor = useCallback((hex) => {
-    // More aggressive quantization - larger buckets for better grouping
     const color = chroma(hex);
-    
-    // Round hue to 24° increments (15 values total)
     const h = Math.round(color.get('hsl.h') / 24) * 24;
-    
-    // Round saturation to 0.25 increments (4 values total)
     const s = Math.round(color.get('hsl.s') * 4) / 4;
-    
-    // Round lightness to 0.25 increments (4 values total)
     const l = Math.round(color.get('hsl.l') * 4) / 4;
-    
-    // Handle edge case for hue when it's undefined (grayscale colors)
     const finalH = isNaN(h) ? 0 : h;
-    
     return chroma.hsl(finalH, s, l).hex();
   }, []);
 
   const mergeSimilarColors = useCallback((colors, maxDeltaE = 5) => {
     if (colors.length === 0) return [];
-    
     const merged = [];
     const used = new Set();
-    
-    // Sort by frequency first
     colors.sort((a, b) => b.count - a.count);
-    
     for (let i = 0; i < colors.length && merged.length < 30; i++) {
       if (used.has(colors[i].hex)) continue;
-      
       const current = colors[i];
       const similar = [current];
-      
-      // Find similar colors
       for (let j = i + 1; j < colors.length; j++) {
         if (used.has(colors[j].hex)) continue;
-        
         const distance = chroma.deltaE(current.hex, colors[j].hex);
         if (distance <= maxDeltaE) {
           similar.push(colors[j]);
           used.add(colors[j].hex);
         }
       }
-      
-      // Select representative color (most frequent)
-      const representative = similar.reduce((prev, curr) => 
-        curr.count > prev.count ? curr : prev
-      );
-      
-      merged.push({
-        hex: representative.hex,
-        count: similar.reduce((sum, c) => sum + c.count, 0),
-        grouped: similar.length
-      });
-      
+      const representative = similar.reduce((prev, curr) => curr.count > prev.count ? curr : prev);
+      merged.push({ hex: representative.hex, count: similar.reduce((sum, c) => sum + c.count, 0), grouped: similar.length });
       used.add(current.hex);
     }
-    
     return merged;
   }, []);
 
   const processImageColors = useCallback((imgElement) => {
     const canvas = canvasRef.current;
     if (!canvas) return [];
-    
     const ctx = canvas.getContext('2d');
     const width = 200;
     const height = (imgElement.height / imgElement.width) * width;
     canvas.width = width;
     canvas.height = height;
-
     ctx.drawImage(imgElement, 0, 0, width, height);
     const imageData = ctx.getImageData(0, 0, width, height).data;
-
     const colorCounts = {};
-    
-    // Sample every 4th pixel for performance
-    for (let i = 0; i < imageData.length; i += 16) { // 4 pixels * 4 channels
-      const r = imageData[i];
-      const g = imageData[i + 1];
-      const b = imageData[i + 2];
-      const a = imageData[i + 3];
-      
-      if (a < 128) continue; // Skip transparent/semi-transparent pixels
-      
+    for (let i = 0; i < imageData.length; i += 16) {
+      const r = imageData[i], g = imageData[i + 1], b = imageData[i + 2], a = imageData[i + 3];
+      if (a < 128) continue;
       const hex = chroma(r, g, b).hex();
       const quantized = quantizeColor(hex);
-      
       colorCounts[quantized] = (colorCounts[quantized] || 0) + 1;
     }
-
-    // Convert to array and merge similar colors
-    const colors = Object.entries(colorCounts)
-      .map(([hex, count]) => ({ hex, count }));
-
-    // First pass: aggressive merging (Delta E <= 5)
+    const colors = Object.entries(colorCounts).map(([hex, count]) => ({ hex, count }));
     let mergedColors = mergeSimilarColors(colors, 5);
-    
-    // Second pass: refine if still too many colors (Delta E <= 3)
-    if (mergedColors.length > 20) {
-      mergedColors = mergeSimilarColors(colors, 3);
-    }
-    
-    // Final pass: very conservative if still too many (Delta E <= 2)
-    if (mergedColors.length > 15) {
-      mergedColors = mergeSimilarColors(colors, 2);
-    }
-
-    // Return just the hex codes, sorted by frequency
-    return mergedColors
-      .sort((a, b) => b.count - a.count)
-      .map(c => c.hex)
-      .slice(0, 20); // Reduced to 20 for cleaner results
+    if (mergedColors.length > 20) mergedColors = mergeSimilarColors(colors, 3);
+    if (mergedColors.length > 15) mergedColors = mergeSimilarColors(colors, 2);
+    return mergedColors.sort((a, b) => b.count - a.count).map(c => c.hex).slice(0, 20);
   }, [quantizeColor, mergeSimilarColors]);
 
   const extractColors = useCallback((imgElement, imageIndex) => {
     setIsExtracting(true);
-    
     setTimeout(() => {
       const extracted = processImageColors(imgElement);
       const newSelected = extracted && extracted.length > 0 ? extracted.slice(0, 10) :[];
-      
       setColors(extracted);
       setSelectedColors(newSelected);
-
       setImages(prev => {
         const updatedImages = [...prev];
         if (imageIndex !== undefined && imageIndex >= 0 && imageIndex < updatedImages.length) {
-          updatedImages[imageIndex] = {
-            ...updatedImages[imageIndex],
-            colors: extracted,
-            selectedColors: newSelected
-          };
+          updatedImages[imageIndex] = { ...updatedImages[imageIndex], colors: extracted, selectedColors: newSelected };
         }
         return updatedImages;
       });
-      
       setIsExtracting(false);
     }, 10);
   }, [processImageColors]);
@@ -171,10 +105,8 @@ function ImagePicker() {
   const handleUpload = (e) => {
     const files = Array.from(e.target.files);
     if (!files || files.length === 0) return;
-
     setIsExtracting(true);
     let loadedCount = 0;
-
     files.forEach((file) => {
       const reader = new FileReader();
       reader.onload = (event) => {
@@ -182,33 +114,13 @@ function ImagePicker() {
         img.onload = () => {
           const extracted = processImageColors(img);
           const initialSelected = extracted && extracted.length > 0 ? extracted.slice(0, 10) :[];
-
-          const newImage = {
-            id: Date.now() + Math.random(),
-            src: event.target.result,
-            file: file,
-            fileName: file.name,
-            colors: extracted,
-            selectedColors: initialSelected
-          };
-          
+          const newImage = { id: Date.now() + Math.random(), src: event.target.result, file: file, fileName: file.name, colors: extracted, selectedColors: initialSelected };
           setImages(prev => {
-            const isFirstUpload = prev.length === 0;
-            
-            if (isFirstUpload) {
-              setCurrentImageIndex(0);
-              setColors(extracted);
-              setSelectedColors(initialSelected);
-              setShowColorManager(true);
-            }
-            
+            if (prev.length === 0) { setCurrentImageIndex(0); setColors(extracted); setSelectedColors(initialSelected); setShowColorManager(true); }
             return [...prev, newImage];
           });
-
           loadedCount++;
-          if (loadedCount === files.length) {
-            setIsExtracting(false);
-          }
+          if (loadedCount === files.length) setIsExtracting(false);
         };
         img.src = event.target.result;
       };
@@ -218,24 +130,17 @@ function ImagePicker() {
 
   const switchToImage = (index) => {
     if (index < 0 || index >= images.length) return;
-    
     setCurrentImageIndex(index);
     const image = images[index];
     if (image && image.colors && Array.isArray(image.colors) && image.colors.length > 0) {
       setColors(image.colors);
       setSelectedColors(Array.isArray(image.selectedColors) ? image.selectedColors :[]);
-    } else {
-      setColors([]);
-      setSelectedColors([]);
-    }
+    } else { setColors([]); setSelectedColors([]); }
   };
 
   const addNewImage = () => {
     const input = document.getElementById('image-upload-input');
-    if (input) {
-      input.value = '';
-      input.click();
-    }
+    if (input) { input.value = ''; input.click(); }
   };
 
   const toggleColorSelection = (hex) => {
@@ -246,47 +151,22 @@ function ImagePicker() {
   };
 
   const removeColor = (hex) => setSelectedColors(prev => prev.filter(c => c !== hex));
-
   const clearAllColors = () => setSelectedColors([]);
-
   const toggleFavoriteColor = (hex) => {
-    if (!isAuthenticated) {
-      dispatch(openAuthModal());
-      return;
-    }
-
-    const existingFavorite = favorites?.palettes?.find(p => 
-      p && p.colors && Array.isArray(p.colors) && p.colors.length === 1 && p.colors[0].hex === hex
-    );
-    
-    if (existingFavorite) {
-      dispatch(toggleFavorite(existingFavorite.colors));
-      addToast('Removed from favorites', 'info');
-    } else {
-      const colorObj = { hex, id: Math.random().toString(36).substr(2, 9) };
-      dispatch(toggleFavorite([colorObj]));
-      addToast('Added to favorites', 'success');
-    }
+    if (!isAuthenticated) { dispatch(openAuthModal()); return; }
+    const existingFavorite = favorites?.palettes?.find(p => p && p.colors && Array.isArray(p.colors) && p.colors.length === 1 && p.colors[0].hex === hex);
+    if (existingFavorite) { dispatch(toggleFavorite(existingFavorite.colors)); addToast('Removed from favorites', 'info'); }
+    else { const colorObj = { hex, id: Math.random().toString(36).substr(2, 9) }; dispatch(toggleFavorite([colorObj])); addToast('Added to favorites', 'success'); }
   };
 
-  const copyColor = (hex) => {
-    navigator.clipboard.writeText(hex);
-    addToast('Color copied!', 'success');
-  };
-
-  const isFavorite = (hex) => {
-    return favorites?.palettes?.some(p => 
-      p && p.colors && Array.isArray(p.colors) && p.colors.length === 1 && p.colors[0].hex === hex
-    ) || false;
-  };
+  const copyColor = (hex) => { navigator.clipboard.writeText(hex); addToast('Color copied!', 'success'); };
+  const isFavorite = (hex) => favorites?.palettes?.some(p => p && p.colors && Array.isArray(p.colors) && p.colors.length === 1 && p.colors[0].hex === hex) || false;
 
   const openInGenerator = () => {
     if (!selectedColors || !Array.isArray(selectedColors) || selectedColors.length === 0) return;
-    const paletteObj = selectedColors.map(hex => ({
-      hex, locked: false, id: Math.random().toString(36).substr(2, 9),
-    }));
+    const paletteObj = selectedColors.map(hex => ({ hex, locked: false, id: Math.random().toString(36).substr(2, 9), }));
     dispatch(setPalette(paletteObj));
-    navigate('/Generate');
+    navigate('/generate');
   };
 
   const extractNewColors = () => {
@@ -297,360 +177,162 @@ function ImagePicker() {
     }
   };
 
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(true);
-  };
-
-  const handleDragLeave = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-  };
-
+  const handleDragOver = (e) => { e.preventDefault(); e.stopPropagation(); setIsDragging(true); };
+  const handleDragLeave = (e) => { e.preventDefault(); e.stopPropagation(); setIsDragging(false); };
   const handleDrop = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-
+    e.preventDefault(); e.stopPropagation(); setIsDragging(false);
     const files = Array.from(e.dataTransfer.files);
     if (!files || files.length === 0) return;
-
     const imageFiles = files.filter(file => file.type.startsWith('image/'));
-    if (imageFiles.length === 0) {
-      addToast('Please drop image files only', 'error');
-      return;
-    }
-
+    if (imageFiles.length === 0) { addToast('Please drop image files only', 'error'); return; }
     const syntheticEvent = { target: { files: imageFiles } };
     handleUpload(syntheticEvent);
   };
 
   return (
-    <div className="min-h-screen bg-[#FDFDFD]">
-      <main className="max-w-7xl mx-auto px-8 py-20">
-        <header className="text-center mb-16">
-          <h1 className="text-6xl font-black text-gray-900 tracking-tight mb-4">Color Extractor</h1>
-          <p className="text-xl font-bold text-gray-400">Extract beautiful colors from any image with ease</p>
-        </header>
+    <div className="min-h-screen bg-white">
+      <header className="max-w-6xl mx-auto px-6 py-12 border-b border-gray-50 mb-12">
+        <h1 className="text-3xl font-bold text-black tracking-tight mb-2">Color Extractor</h1>
+        <p className="text-[15px] font-medium text-gray-500">
+           Extract professional color palettes from any source image.
+        </p>
+      </header>
 
-        <div className="max-w-6xl mx-auto">
-          {images.length > 0 && (
-            <div className="mb-8">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-black text-gray-900">Images ({images.length})</h3>
-                <button
-                  onClick={addNewImage}
-                  className="px-4 py-2 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-colors font-bold text-sm flex items-center gap-2"
+      <main className="max-w-6xl mx-auto px-6 pb-24">
+        <div className="grid lg:grid-cols-2 gap-12 items-start">
+          {/* Workspace Area */}
+          <div className="space-y-8">
+             {images.length > 0 ? (
+               <div className="relative group border border-gray-100 rounded-lg overflow-hidden bg-gray-50">
+                  <img src={currentImage.src} alt="Source" className="w-full max-h-[500px] object-contain mx-auto" />
+                  <div className="absolute top-4 right-4 flex gap-2">
+                     <button onClick={extractNewColors} className="p-2 bg-white/90 backdrop-blur rounded-md text-gray-400 hover:text-black shadow-sm transition-colors">
+                        <RefreshCw size={18} />
+                     </button>
+                     <button onClick={addNewImage} className="p-2 bg-white/90 backdrop-blur rounded-md text-gray-400 hover:text-black shadow-sm transition-colors">
+                        <Plus size={18} />
+                     </button>
+                  </div>
+               </div>
+             ) : (
+                <div 
+                  className={`border-2 border-dashed rounded-lg p-16 text-center transition-colors ${
+                    isDragging ? 'border-black bg-gray-50' : 'border-gray-100 hover:border-gray-200'
+                  }`}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
                 >
-                  <Plus size={16} />
-                  Add Another Image
-                </button>
-              </div>
-              <div className="flex gap-4 pb-2">
-                {images.map((img, index) => (
-                  <button
-                    key={img.id}
-                    onClick={() => switchToImage(index)}
-                    className={`relative flex-shrink-0 transition-all ${
-                      index === currentImageIndex 
-                        ? 'ring-4 rounded ring-blue-500 ring-offset-2 scale-105' 
-                        : 'hover:scale-105'
-                    }`}
-                  >
-                    <img src={img.src} alt={`Image ${index + 1}`} className="w-20 h-20 object-cover rounded-xl shadow-lg" />
-                    {index === currentImageIndex && (
-                      <div className="absolute -top-2 -right-2 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
-                        <CheckCircle size={16} className="text-white" />
+                   <label htmlFor="image-upload-input" className="cursor-pointer flex flex-col items-center">
+                      <div className="w-12 h-12 bg-gray-50 border border-gray-100 rounded-md flex items-center justify-center mb-4 text-gray-400">
+                         <Upload size={20} />
                       </div>
-                    )}
-                  </button>
-                ))}
-                <button
-                  onClick={addNewImage}
-                  className="w-20 h-20 border-2 border-dashed border-gray-300 rounded-xl flex items-center justify-center hover:border-blue-400 hover:bg-blue-50 transition-colors flex-shrink-0"
-                >
-                  <Plus size={24} className="text-gray-400" />
-                </button>
-              </div>
-            </div>
-          )}
-
-          <div 
-            className={`bg-white p-12 rounded-[2.5rem] border-2 border-dashed shadow-sm transition-all text-center relative overflow-hidden group ${
-              isDragging 
-                ? 'border-blue-500 bg-blue-50 scale-[1.02]' 
-                : 'border-gray-100 hover:border-blue-300'
-            }`}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-          >
-            {currentImage ? (
-              <div className="flex flex-col gap-10">
-                <div className="relative rounded-[2rem] overflow-hidden shadow-2xl">
-                    <img src={currentImage.src} alt="Uploaded" className="w-full max-h-[500px] object-cover" />
-                    <button
-                        onClick={() => {
-                          setImages(prev => {
-                            const filteredImages = prev.filter((_, i) => i !== currentImageIndex);
-                            if (filteredImages.length > 0) {
-                              setCurrentImageIndex(0);
-                              const firstImage = filteredImages[0];
-                              if (firstImage && firstImage.colors && Array.isArray(firstImage.colors)) {
-                                setColors(firstImage.colors);
-                                setSelectedColors(Array.isArray(firstImage.selectedColors) ? firstImage.selectedColors : []);
-                              } else {
-                                setColors([]);
-                                setSelectedColors([]);
-                              }
-                            } else {
-                              setCurrentImageIndex(-1);
-                              setColors([]);
-                              setSelectedColors([]);
-                            }
-                            return filteredImages;
-                          });
-                        }}
-                        className="absolute top-6 right-6 p-4 bg-white/90 backdrop-blur text-gray-900 rounded-2xl hover:bg-white transition-all shadow-xl"
-                    >
-                        <RefreshCw size={24} />
-                    </button>
+                      <h3 className="text-[15px] font-bold text-black mb-1">Click to upload</h3>
+                      <p className="text-[13px] text-gray-500 font-medium">or drag and drop images here</p>
+                   </label>
                 </div>
+             )}
 
-                <div className="flex flex-col gap-8">
-                    <div className="flex items-center justify-between">
-                        <div className="text-left">
-                            <h3 className="text-2xl font-black text-gray-900">Extracted Colors</h3>
-                            <p className="text-lg font-bold text-gray-400">{colors.length} unique colors found</p>
-                        </div>
-                        <div className="flex gap-3">
-                            <button
-                                onClick={extractNewColors}
-                                className="px-4 py-2 bg-gray-50 text-gray-700 rounded-xl hover:bg-gray-100 transition-colors font-bold text-sm flex items-center gap-2"
-                            >
-                                <RefreshCw size={16} />
-                                Re-extract
-                            </button>
-                            <button
-                                onClick={() => setShowColorManager(!showColorManager)}
-                                className="px-4 py-2 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-colors font-bold text-sm"
-                            >
-                                {showColorManager ? 'Hide' : 'Show'} Manager
-                            </button>
-                        </div>
-                    </div>
-
-                    <div className="flex gap-2 h-20 rounded-2xl overflow-hidden shadow-lg">
-                        {isExtracting ? (
-                             <div className="w-full h-full bg-gray-50 flex items-center justify-center animate-pulse">
-                                <span className="text-lg font-black text-gray-300">Extracting colors...</span>
-                             </div>
-                        ) : selectedColors.length > 0 ? (
-                            selectedColors.map((hex, i) => (
-                                <div
-                                    key={i}
-                                    className="flex-1 relative group/color-swatch cursor-pointer"
-                                    style={{ backgroundColor: hex }}
-                                    onClick={() => toggleColorSelection(hex)}
-                                >
-                                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/color-swatch:opacity-100 transition-opacity bg-black/20">
-                                        <CheckCircle size={20} className="text-white" />
-                                    </div>
-                                </div>
-                            ))
-                        ) : (
-                            <div className="w-full h-full bg-gray-50 flex items-center justify-center">
-                                <span className="text-lg font-black text-gray-400">No colors selected</span>
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                        <p className="text-lg font-bold text-gray-400">{selectedColors.length} colors selected</p>
-                        <div className="flex gap-2">
-                            <button onClick={clearAllColors} className="px-3 py-1 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors font-bold text-sm">
-                                Clear All
-                            </button>
-                        </div>
-                    </div>
-
-                    <button
-                        onClick={openInGenerator}
-                        disabled={selectedColors.length === 0}
-                        className="h-20 bg-blue-600 text-white text-xl font-black rounded-3xl shadow-2xl shadow-blue-100 hover:bg-blue-700 transition-all flex items-center justify-center gap-4 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        <ExternalLink size={28} />
-                        Open {selectedColors.length} Colors in Generator
-                    </button>
+             {images.length > 0 && (
+                <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+                   {images.map((img, index) => (
+                     <button 
+                        key={img.id} 
+                        onClick={() => switchToImage(index)}
+                        className={`w-16 h-16 rounded-md border-2 flex-shrink-0 transition-all ${
+                          index === currentImageIndex ? 'border-black scale-95' : 'border-transparent opacity-60 hover:opacity-100'
+                        }`}
+                     >
+                        <img src={img.src} alt="Thumb" className="w-full h-full object-cover rounded-sm" />
+                     </button>
+                   ))}
+                   <button onClick={addNewImage} className="w-16 h-16 rounded-md border border-dashed border-gray-100 flex items-center justify-center text-gray-300 hover:text-black hover:border-gray-200 flex-shrink-0">
+                      <Plus size={20} />
+                   </button>
                 </div>
-              </div>
-            ) : (
-              <label htmlFor="image-upload-input" className="cursor-pointer py-20 flex flex-col items-center gap-8">
-                <div className="w-24 h-24 bg-blue-50 text-blue-600 rounded-3xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-blue-100/50">
-                    <Upload size={40} />
-                </div>
-                <div className="flex flex-col gap-2">
-                    <h2 className="text-3xl font-black text-gray-900">Drop images here</h2>
-                    <p className="text-xl font-bold text-gray-400">or click to browse your files (multiple supported)</p>
-                </div>
-                <div className="mt-8 flex items-center gap-3 px-6 py-3 bg-gray-50 text-gray-400 rounded-2xl font-bold text-sm">
-                    <ImageIcon size={20} />
-                    Supports PNG, JPG, WEBP (multiple files)
-                </div>
-              </label>
-            )}
-
-            <canvas ref={canvasRef} className="hidden" />
-            <input
-                id="image-upload-input"
-                type="file"
-                className="hidden"
-                accept="image/*"
-                multiple
-                onChange={handleUpload}
-            />
+             )}
           </div>
 
-          <AnimatePresence>
-            {showColorManager && currentImage && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 20 }}
-                className="mt-8 bg-white p-8 rounded-[2rem] border border-gray-100 shadow-xl"
-              >
-                <div className="flex items-center justify-between mb-6">
-                  <div>
-                    <h3 className="text-2xl font-black text-gray-900">Color Manager</h3>
-                    <p className="text-sm font-bold text-gray-400">
-                      {selectedColors.length} of {colors.length} colors selected
-                    </p>
-                  </div>
-                  <button onClick={() => setShowColorManager(false)} className="p-2 text-gray-400 hover:text-gray-600 transition-colors">
-                    <X size={24} />
-                  </button>
+          {/* Analysis Area */}
+          <div className="space-y-8">
+             <div className="bg-white p-6 rounded-lg border border-gray-100">
+                <div className="flex items-center justify-between mb-8 border-b border-gray-50 pb-4">
+                   <h3 className="text-sm font-bold text-black uppercase tracking-widest">Analysis</h3>
+                   <div className="flex gap-3">
+                      <button onClick={clearAllColors} className="text-[11px] font-bold text-gray-400 hover:text-red-500 uppercase tracking-wider transition-colors">Clear</button>
+                      <button onClick={openInGenerator} disabled={selectedColors.length === 0} className="text-[11px] font-bold text-black hover:underline uppercase tracking-wider disabled:opacity-20">Open All</button>
+                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                  {selectedColors.length > 0 && (
-                    <>
-                      <div className="col-span-full">
-                        <h4 className="text-lg font-black text-gray-900 mb-4">Selected Colors ({selectedColors.length})</h4>
-                      </div>
-                      {selectedColors.map((hex, i) => {
-                        const favorited = isFavorite(hex);
-                        return (
-                          <motion.div key={`selected-${i}`} initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: i * 0.02 }} className="relative">
-                            <div className="h-24 rounded-2xl shadow-lg cursor-pointer transition-all relative group/color-box ring-4 ring-blue-500 ring-offset-2" style={{ backgroundColor: hex }} onClick={() => toggleColorSelection(hex)}>
-                              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/color-box:opacity-100 transition-opacity bg-black/20 rounded-2xl">
-                                <CheckCircle size={24} className="text-white" />
-                              </div>
-                            </div>
-                            <div className="mt-2 flex items-center justify-between">
-                              <span className="text-xs font-black text-gray-900 uppercase tracking-tighter">{hex}</span>
-                              <div className="flex gap-1">
-                                <button onClick={(e) => { e.stopPropagation(); copyColor(hex); }} className="p-1 text-gray-400 hover:text-blue-500 transition-colors z-10" title="Copy color">
-                                  <Copy size={14} />
-                                </button>
-                                <button onClick={(e) => { e.stopPropagation(); toggleFavoriteColor(hex); }} className={`p-1 rounded transition-colors z-10 ${favorited ? 'text-red-500 hover:text-red-600' : 'text-gray-400 hover:text-red-500'}`} title="Add to favorites">
-                                  <Heart size={14} fill={favorited ? 'currentColor' : 'none'} />
-                                </button>
-                                <button onClick={(e) => { e.stopPropagation(); removeColor(hex); }} className="p-1 text-gray-400 hover:text-red-500 transition-colors z-10" title="Remove from selection">
-                                  <Trash2 size={14} />
-                                </button>
-                              </div>
-                            </div>
-                          </motion.div>
-                        );
-                      })}
-                    </>
-                  )}
-
-                  {colors && Array.isArray(colors) && colors.filter(hex => !selectedColors.includes(hex)).length > 0 && (
-                    <>
-                      <div className="col-span-full mt-8">
-                        <h4 className="text-lg font-black text-gray-900 mb-4">
-                          Available Colors ({colors && Array.isArray(colors) ? colors.filter(hex => !selectedColors.includes(hex)).length : 0})
-                        </h4>
-                      </div>
-                      {colors.filter(hex => !selectedColors.includes(hex)).map((hex, i) => {
-                        const favorited = isFavorite(hex);
-                        const canSelect = selectedColors.length < 10;
-                        
-                        return (
-                          <motion.div
-                            key={`available-${i}`}
-                            initial={{ scale: 0.8, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            transition={{ delay: i * 0.02 }}
-                            className="relative"
-                          >
-                            <div
-                              className={`h-24 rounded-2xl shadow-lg cursor-pointer transition-all relative group/color-box ${
-                                !canSelect ? 'cursor-not-allowed opacity-50' : 'hover:scale-105'
-                              }`}
-                              style={{ backgroundColor: hex }}
-                              onClick={() => canSelect && toggleColorSelection(hex)}
-                            >
-                              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/color-box:opacity-100 transition-opacity bg-black/20 rounded-2xl">
-                                <CheckCircle 
-                                  size={24} 
-                                  className="text-white/50" 
-                                />
-                              </div>
-                              
-                              {!canSelect && (
-                                <div className="absolute inset-0 bg-black/50 rounded-2xl flex items-center justify-center">
-                                  <span className="text-white text-xs font-black bg-black/70 px-2 py-1 rounded">
-                                    Limit (10)
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                            
-                            <div className="mt-2 flex items-center justify-between">
-                              <span className="text-xs font-black text-gray-900 uppercase tracking-tighter">
-                                {hex}
-                              </span>
-                              <div className="flex gap-1">
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    copyColor(hex);
-                                  }}
-                                  className="p-1 text-gray-400 hover:text-blue-500 transition-colors z-10"
-                                  title="Copy color"
-                                >
-                                  <Copy size={14} />
-                                </button>
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    toggleFavoriteColor(hex);
-                                  }}
-                                  className={`p-1 rounded transition-colors z-10 ${
-                                    favorited 
-                                      ? 'text-red-500 hover:text-red-600' 
-                                      : 'text-gray-400 hover:text-red-500'
-                                  }`}
-                                  title="Add to favorites"
-                                >
-                                  <Heart size={14} fill={favorited ? 'currentColor' : 'none'} />
-                                </button>
-                              </div>
-                            </div>
-                          </motion.div>
-                        );
-                      })}
-                    </>
-                  )}
+                <div className="flex flex-wrap gap-2 mb-8 h-12">
+                   {selectedColors.map((hex, i) => (
+                     <div 
+                        key={i} 
+                        className="w-10 h-10 rounded border border-gray-100 relative group cursor-pointer" 
+                        style={{ backgroundColor: hex }}
+                        onClick={() => toggleColorSelection(hex)}
+                     >
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                           <X size={12} className="text-white opacity-0 group-hover:opacity-100" />
+                        </div>
+                     </div>
+                   ))}
+                   {selectedColors.length === 0 && (
+                     <div className="w-full h-full bg-gray-50 rounded flex items-center justify-center text-[12px] font-medium text-gray-400 border border-dashed border-gray-100">
+                        No colors selected
+                     </div>
+                   )}
                 </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+
+                <div className="space-y-2">
+                   <h4 className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-4">Extracted Stops</h4>
+                   <div className="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 gap-2">
+                      {colors.map((hex, i) => (
+                        <button 
+                          key={i} 
+                          onClick={() => toggleColorSelection(hex)}
+                          className={`aspect-square rounded border transition-all ${
+                            selectedColors.includes(hex) ? 'border-black scale-90 ring-2 ring-black/5 ring-offset-1' : 'border-gray-50 hover:border-gray-200'
+                          }`}
+                          style={{ backgroundColor: hex }}
+                        />
+                      ))}
+                   </div>
+                </div>
+             </div>
+
+             <div className="bg-white p-6 rounded-lg border border-gray-100">
+                <h3 className="text-sm font-bold text-black uppercase tracking-widest mb-6">Library Selection</h3>
+                <div className="space-y-4">
+                   {selectedColors.map((hex, i) => {
+                      const favorited = isFavorite(hex);
+                      return (
+                        <div key={i} className="flex items-center justify-between p-2 rounded-md hover:bg-gray-50 transition-colors">
+                           <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded border border-gray-100 shadow-sm" style={{ backgroundColor: hex }} />
+                              <span className="text-[13px] font-mono font-bold text-black uppercase">{hex}</span>
+                           </div>
+                           <div className="flex gap-2">
+                              <button onClick={() => copyColor(hex)} className="p-1.5 text-gray-300 hover:text-black transition-colors">
+                                 <Copy size={14} />
+                              </button>
+                              <button onClick={() => toggleFavoriteColor(hex)} className={`p-1.5 transition-colors ${favorited ? 'text-red-500' : 'text-gray-300 hover:text-red-500'}`}>
+                                 <Heart size={14} fill={favorited ? 'currentColor' : 'none'} />
+                              </button>
+                           </div>
+                        </div>
+                      );
+                   })}
+                   {selectedColors.length === 0 && (
+                      <p className="text-[13px] text-gray-400 font-medium text-center py-4 italic">No colors selected to manage.</p>
+                   )}
+                </div>
+             </div>
+          </div>
         </div>
+
+        <canvas ref={canvasRef} className="hidden" />
+        <input id="image-upload-input" type="file" className="hidden" accept="image/*" multiple onChange={handleUpload} />
       </main>
     </div>
   );

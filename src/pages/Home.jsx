@@ -13,27 +13,26 @@ import FeatureCard from '../components/FeatureCard'
 const Home = () => {
   return (
     <div className="min-h-screen bg-white">
-      <main className="max-w-7xl mx-auto px-10 pt-16 pb-24 text-center">
-        <div className="mb-12">
-          <h1 className="text-7xl md:text-8xl font-black text-gray-900 tracking-tight leading-[0.9] mb-8">
-            The super fast <br /> color palettes <br /> generator!
+      <main className="max-w-5xl mx-auto px-6 pt-24 pb-24 text-center">
+        <div className="mb-24 text-center">
+          <h1 className="text-[80px] font-bold text-black leading-[70px] tracking-tight mb-6">
+            The workspace for <br /> color curation.
           </h1>
-          <p className="text-xl font-semibold text-gray-400 max-w-2xl mx-auto mb-12">
-            Create perfect palette or get inspired by thousands of beautiful color schemes.
+          <p className="text-[17px] font-medium text-gray-500 max-w-xl mx-auto mb-10">
+            Professional color tool for designers to curate, visualize, and extract perfect palettes for your next project.
           </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
-            <button className="px-10 py-5 bg-blue-600 text-white text-xl font-black rounded-2xl shadow-xl shadow-blue-100 hover:bg-blue-700 transition-all flex items-center gap-3">
-              Start generator!
-            </button>
-            <button className="px-10 py-5 bg-white border border-gray-100 text-xl font-black rounded-2xl hover:border-gray-200 transition-all shadow-sm">
-              Explore palettes
-            </button>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <Link to="/generate" className="px-8 py-3 bg-black text-white text-[15px] font-bold rounded-lg hover:bg-gray-800 transition-all shadow-sm">
+              Open Generator
+            </Link>
+            <Link to="/explore" className="px-8 py-3 bg-white border border-gray-200 text-[15px] font-bold rounded-lg hover:bg-gray-50 transition-all">
+              Explore Palettes
+            </Link>
           </div>
         </div>
 
-        {/* Hero Mockup */}
-        <div className="mt-24 rounded-[40px] overflow-hidden shadow-2xl border border-gray-50 p-3 bg-white">
+         <div className="mt-24 rounded-[40px] overflow-hidden shadow-2xl border border-gray-50 p-3 bg-white">
           <div className="aspect-[21/9] w-full bg-gray-50 flex overflow-hidden rounded-[32px]">
             {['#264653', '#2a9d8f', '#e9c46a', '#f4a261', '#e76f51', '#e9c46a'].map((color, i) => (
               <div key={`${color}-${i}`} className="flex-1 hover:flex-[1.5] transition-all duration-500 ease-in-out cursor-pointer group relative" style={{ backgroundColor: color }}>
@@ -45,38 +44,37 @@ const Home = () => {
           </div>
         </div>
 
-        {/* Color of the Week */}
-        <section className="mt-40 text-left">
-          <div className="flex items-end justify-between mb-10">
+        {/* Color Highlight Section */}
+        <section className="mt-40 text-left border-t border-gray-50 pt-20">
+          <div className="flex items-end justify-between mb-12">
             <div>
-              <h2 className="text-4xl font-black tracking-tight text-gray-900 mb-2">Color of the Week</h2>
-              <p className="text-gray-400 font-bold">A special shade picked by our community designers.</p>
+              <h2 className="text-2xl font-bold tracking-tight text-black mb-2">Color Highlight</h2>
+              <p className="text-[15px] font-medium text-gray-500 leading-relaxed">A special shade picked by our community designers for this month.</p>
             </div>
             <div className="hidden sm:block">
-              <span className="px-4 py-2 bg-blue-50 text-blue-600 font-black rounded-full text-xs uppercase tracking-widest">March 2024</span>
+              <span className="px-3 py-1 bg-gray-50 text-black font-bold border border-gray-100 rounded-md text-[10px] uppercase tracking-widest">March 2024</span>
             </div>
           </div>
 
-          <div className="grid lg:grid-cols-2 gap-10">
+          <div className="grid lg:grid-cols-2 gap-8">
             <div
-              className="h-[500px] rounded-[40px] shadow-2xl flex flex-col items-center justify-center relative overflow-hidden group cursor-pointer"
+              className="h-[400px] rounded-lg flex flex-col items-center justify-center relative overflow-hidden group border border-gray-100 shadow-sm"
               style={{ backgroundColor: '#FF5E5B' }}
             >
-              <div className="absolute inset-0 bg-black/5 group-hover:bg-black/5 transition-colors" />
-              <h3 className="text-7xl font-black text-white drop-shadow-xl uppercase mb-4">Coral Bliss</h3>
-              <p className="text-white/80 text-xl font-bold tracking-widest">#FF5E5B</p>
-              <button className="mt-10 px-8 py-3 bg-white text-black rounded-2xl opacity-0 group-hover:opacity-100 translate-y-4 transition-all">
-                View palette
+              <h3 className="text-4xl font-bold text-white drop-shadow-sm uppercase mb-2">Coral Bliss</h3>
+              <p className="text-white/80 text-[15px] font-bold tracking-widest uppercase">#FF5E5B</p>
+              <button className="mt-8 px-6 py-2 bg-white text-black font-bold rounded-lg opacity-0 group-hover:opacity-100 transition-all text-sm">
+                View Palette
               </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-2 gap-4">
               {['#D8E2DC', '#FFE5D9', '#FFCAD4', '#F4ACB7'].map((c, i) => (
-                <div key={i} className="rounded-[32px] overflow-hidden shadow-lg border border-gray-50 p-2 bg-white flex flex-col">
-                  <div className="h-full rounded-[24px]" style={{ backgroundColor: c }} />
-                  <div className="p-4 flex justify-between items-center">
-                    <span className="font-black text-xs text-gray-400 uppercase tracking-widest">{c}</span>
-                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: c }} />
+                <div key={i} className="rounded-lg overflow-hidden border border-gray-100 p-1.5 bg-white flex flex-col transition-colors hover:border-gray-200">
+                  <div className="h-full rounded-md" style={{ backgroundColor: c }} />
+                  <div className="p-3 flex justify-between items-center bg-gray-50/30">
+                    <span className="font-bold text-[10px] text-gray-400 uppercase tracking-widest">{c}</span>
+                    <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: c }} />
                   </div>
                 </div>
               ))}
@@ -84,87 +82,77 @@ const Home = () => {
           </div>
         </section>
 
-        {/* Featured Palettes Section */}
-        <section className="mt-40 text-left">
-          <div className="flex items-center justify-between mb-10">
-            <h2 className="text-4xl font-black tracking-tight text-gray-900">Trending Palettes</h2>
-            <a href="/explore" className="text-blue-600 font-black hover:underline underline-offset-8">Browse all</a>
+        <section className="mt-40 text-left border-t border-gray-50 pt-20">
+          <div className="flex items-center justify-between mb-12">
+            <h2 className="text-2xl font-bold tracking-tight text-black">Trending Designs</h2>
+            <Link to="/explore" className="text-[13px] font-bold text-black hover:underline underline-offset-4 decoration-gray-300">Browse collection</Link>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
               ['#1a535c', '#4ecdc4', '#f7fff7', '#ff6b6b', '#ffe66d'],
               ['#2b2d42', '#8d99ae', '#edf2f4', '#ef233c', '#d90429'],
               ['#003049', '#d62828', '#f77f00', '#fcbf49', '#eae2b7'],
               ['#264653', '#2a9d8f', '#e9c46a', '#f4a261', '#e76f51'],
               ['#f94144', '#f3722c', '#f8961e', '#f9c74f', '#90be6d'],
-              ['#264653', '#2a9d8f', '#e9c46a', '#f4a261', '#e76f51'],
               ['#ff9f1c', '#ffbf69', '#ffffff', '#cbf3f0', '#2ec4b6']
             ].map((palette, i) => (
-              <div key={i} className="rounded-[32px] overflow-hidden shadow-lg hover:shadow-2xl transition-all border border-gray-50 bg-white p-3 cursor-pointer group">
-                <div className="h-40 w-full flex rounded-[24px] overflow-hidden mb-4">
+              <div key={i} className="rounded-lg overflow-hidden border border-gray-100 hover:border-gray-200 transition-all bg-white p-2 cursor-pointer group flex flex-col">
+                <div className="h-32 w-full flex rounded-md overflow-hidden mb-3">
                   {palette.map((c, j) => (
                     <div key={j} className="flex-1" style={{ backgroundColor: c }} />
                   ))}
                 </div>
-                <div className="px-4 pb-2 flex items-center justify-between">
-                  <span className="font-black text-[10px] text-gray-300 uppercase tracking-widest">Trending #{100 + i}</span>
-                  <Save className="text-gray-200 group-hover:text-green-400 transition-colors" size={16} />
+                <div className="px-2 pb-1 flex items-center justify-between">
+                  <span className="font-bold text-[10px] text-gray-400 uppercase tracking-widest">Trending #{i + 1}</span>
+                  <Save className="text-gray-300 group-hover:text-black transition-colors" size={14} />
                 </div>
               </div>
             ))}
           </div>
         </section>
 
-        {/* Features Grid */}
-        <section className="mt-40 grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <section className="mt-40 grid md:grid-cols-2 lg:grid-cols-4 gap-4">
           <FeatureCard
             icon={Play}
             title="Generator"
-            description="Create unique color palettes quickly and effortlessly."
-            color="bg-blue-600"
+            description="Create professional color schemes in seconds."
+            color="bg-black"
           />
           <FeatureCard
             icon={Search}
             title="Explore"
-            description="Discover millions of color palettes by topic, style and color."
-            color="bg-emerald-500"
+            description="Browse community curated palettes."
+            color="bg-black"
           />
           <FeatureCard
             icon={Image}
-            title="Image Picker"
-            description="Extract beautiful colors from any image with ease."
-            color="bg-amber-400"
+            title="Visualizer"
+            description="Simulate colors on real world components."
+            color="bg-black"
           />
           <FeatureCard
             icon={CheckCircle}
-            title="Contrast Checker"
-            description="Ensure your designs meet accessibility standards."
-            color="bg-red-500"
+            title="Contrast"
+            description="Ensure designs meet global accessibility."
+            color="bg-black"
           />
         </section>
       </main>
 
-      <footer className="py-24 text-center text-gray-400 font-bold border-t border-gray-100 bg-gray-50/50">
-        <div className="flex items-center justify-center mb-6">
-          <div className="w-8 h-8 bg-blue-600 rounded-lg relative flex items-center justify-center">
-            <div className="w-4 h-4 bg-white rounded-full" />
-            <div className="w-3 h-2 absolute bg-blue-600 -right-1 bottom-0 rounded-full" />
-          </div>
-          <span className="text-xl font-black tracking-tighter text-gray-900">olors</span>
+      <footer className="py-10 text-center border-t border-gray-50">
+        <Link to="/" className="text-[32px] font-bold tracking-tight text-black mb-2 inline-block">
+          Qolors
+        </Link>
+        <p className="text-[16px] font-medium text-gray-400">Professional curation tool for workspace designers.</p>
+        <div className="flex items-center justify-center gap-8 mt-4">
+          {['Twitter', 'Instagram', 'Pinterest', 'GitHub'].map(social => (
+            <a key={social} href="#" className="text-[16px] font-bold text-gray-400 hover:text-black transition-colors">
+              {social}
+            </a>
+          ))}
         </div>
-        <p> 2026 Qolors. Made with love for premium designers.</p>
-        <div className="flex items-center justify-center gap-6 mt-10">
-          <a href="#" className="hover:text-gray-900 transition-colors">
-            Twitter
-          </a>
-          <a href="#" className="hover:text-gray-900 transition-colors">
-            Instagram
-          </a>
-          <a href="#" className="hover:text-gray-900 transition-colors">
-            Pinterest
-          </a>
-        </div>
+        <p className="text-[11px] font-bold text-gray-300 uppercase tracking-widest mt-12">© 2026 Qolors</p>
       </footer>
     </div>
   )

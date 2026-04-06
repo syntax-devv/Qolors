@@ -142,8 +142,7 @@ const AngleDial = ({ angle, onChange }) => {
     </div>
   );
 };
-
-const GradientMaker = () => {
+const GradientMaker = () => {
   const [colors, setColors] = useState(['#f72585', '#4361ee']);
   const [angle, setAngle] = useState(90);
   const [showCSS, setShowCSS] = useState(true);
@@ -204,199 +203,148 @@ const GradientMaker = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#FDFDFD]">
-      <main className="max-w-7xl mx-auto px-8 py-20">
-        <header className="text-center mb-16">
-          <h1 className="text-6xl font-black text-gray-900 tracking-tight mb-4">Gradient Maker</h1>
-          <p className="text-xl font-bold text-gray-400">Create beautiful CSS gradients with ease</p>
-        </header>
+    <div className="min-h-screen bg-white">
+      <header className="max-w-6xl mx-auto px-6 py-12 border-b border-gray-50 mb-12">
+        <h1 className="text-3xl font-bold text-black tracking-tight mb-2">Gradient Maker</h1>
+        <p className="text-[15px] font-medium text-gray-500">
+           Create buttery smooth interpolation between custom color stops.
+        </p>
+      </header>
 
-        <div className="grid lg:grid-cols-2 gap-8">
-          {/* Gradient Preview */}
-          <div className="space-y-6">
+      <main className="max-w-6xl mx-auto px-6 pb-24">
+        <div className="grid lg:grid-cols-2 gap-12 items-start">
+          {/* Gradient Preview Area */}
+          <div className="space-y-8">
             <div 
-              className="h-96 rounded-[2rem] shadow-2xl border border-gray-100"
+              className="h-[400px] rounded-lg border border-gray-100 relative group overflow-hidden"
               style={{ background: gradientCSS }}
-            />
-
-            {/* CSS Output */}
-            <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-xl">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-black text-gray-900">CSS Code</h3>
-                <button
-                  onClick={() => setShowCSS(!showCSS)}
-                  className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
-                >
-                  {showCSS ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              </div>
-              
-              <AnimatePresence>
-                {showCSS && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    className="relative"
-                  >
-                    <div className="bg-gray-50 p-4 rounded-xl font-mono text-sm text-gray-700">
-                      background: {gradientCSS};
-                    </div>
-                    <button
-                      onClick={copyCSS}
-                      className="absolute top-2 right-2 p-2 bg-white text-gray-600 rounded-lg hover:text-gray-900 transition-colors shadow-sm"
-                    >
-                      <Copy size={14} />
-                    </button>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+            >
+               <div className="absolute inset-x-0 bottom-0 p-4 bg-white/10 backdrop-blur-md border-t border-white/20 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="flex items-center justify-between">
+                     <span className="text-[11px] font-bold text-white uppercase tracking-widest">Preview Mode</span>
+                     <button className="text-[11px] font-bold text-white uppercase tracking-widest hover:underline">Fullscreen</button>
+                  </div>
+               </div>
             </div>
 
-            {/* Preset Gradients */}
-            <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-xl">
-              <h3 className="text-lg font-black text-gray-900 mb-4">Preset Gradients</h3>
-              <div className="grid grid-cols-2 gap-3">
-                {presetGradients.map((preset, i) => (
-                  <button
-                    key={i}
-                    onClick={() => applyPreset(preset)}
-                    className="h-20 rounded-xl border-2 border-gray-200 hover:scale-105 transition-transform relative overflow-hidden group"
-                    style={{ background: `linear-gradient(45deg, ${preset.colors.join(', ')})` }}
-                  >
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
-                      <span className="text-white text-xs font-black opacity-0 group-hover:opacity-100 transition-opacity">
-                        {preset.name}
-                      </span>
-                    </div>
+            {/* Export Section */}
+            <div className="bg-white p-6 rounded-lg border border-gray-100">
+               <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-50">
+                  <h3 className="text-sm font-bold text-black uppercase tracking-widest">Export</h3>
+                  <button onClick={copyCSS} className="text-xs font-bold text-gray-400 hover:text-black flex items-center gap-1.5 transition-colors">
+                     <Copy size={14} />
+                     Copy All
                   </button>
-                ))}
-              </div>
+               </div>
+               
+               <div className="space-y-4">
+                  <div className="bg-gray-50 p-4 rounded-md relative group">
+                     <code className="text-[13px] font-mono font-medium text-gray-600 block leading-relaxed break-all">
+                        {gradientCSS}
+                     </code>
+                     <button onClick={copyCSS} className="absolute top-2 right-2 p-1.5 bg-white border border-gray-100 rounded text-gray-400 hover:text-black transition-colors opacity-0 group-hover:opacity-100">
+                        <Copy size={12} />
+                     </button>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                     <button className="px-4 py-2.5 bg-black text-white rounded-md text-[13px] font-bold hover:bg-gray-800 transition-colors">
+                        SVG Document
+                     </button>
+                     <button className="px-4 py-2.5 bg-gray-100 text-black rounded-md text-[13px] font-bold hover:bg-gray-200 transition-colors">
+                        PNG Export
+                     </button>
+                  </div>
+               </div>
             </div>
           </div>
 
-          {/* Controls */}
-          <div className="space-y-6">
-            {/* Color Controls */}
-            <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-xl">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-black text-gray-900">Colors</h3>
-                <div className="flex gap-2">
-                  <button
-                    onClick={randomizeGradient}
-                    className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
-                    title="Randomize gradient"
-                  >
-                    <RefreshCw size={16} />
-                  </button>
-                  <button
-                    onClick={addColor}
-                    disabled={colors.length >= 5}
-                    className="p-2 text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    title="Add color"
-                  >
-                    <Plus size={16} />
-                  </button>
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                {colors.map((color, index) => (
-                  <div key={index} className="flex items-center gap-3">
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => moveColor(index, Math.max(0, index - 1))}
-                        disabled={index === 0}
-                        className="p-1 text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <ArrowRight size={14} className="-rotate-90" />
-                      </button>
-                      <button
-                        onClick={() => moveColor(index, Math.min(colors.length - 1, index + 1))}
-                        disabled={index === colors.length - 1}
-                        className="p-1 text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <ArrowRight size={14} className="rotate-90" />
-                      </button>
-                    </div>
-                    
-                    <div className="flex-1 flex items-center gap-3">
-                      <div 
-                        className="w-12 h-12 rounded-lg border-2 border-gray-200"
-                        style={{ backgroundColor: color }}
-                      />
-                      <input
-                        type="text"
-                        value={color}
-                        onChange={(e) => updateColor(index, e.target.value)}
-                        className="flex-1 px-3 py-2 border-2 border-gray-200 rounded-lg font-mono text-sm font-bold focus:border-blue-500 focus:outline-none"
-                        placeholder="#000000"
-                      />
-                    </div>
-                    
-                    <button
-                      onClick={() => removeColor(index)}
-                      disabled={colors.length <= 2}
-                      className="p-2 text-red-400 hover:text-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <X size={16} />
-                    </button>
+          {/* Configuration Area */}
+          <div className="space-y-8">
+            <div className="bg-white p-6 rounded-lg border border-gray-100">
+               <div className="flex items-center justify-between mb-8">
+                  <h3 className="text-sm font-bold text-black uppercase tracking-widest">Color Stops</h3>
+                  <div className="flex gap-2">
+                     <button onClick={randomizeGradient} className="p-1.5 text-gray-400 hover:text-black transition-colors" title="Randomize">
+                        <RefreshCw size={16} />
+                     </button>
+                     <button 
+                        onClick={addColor} 
+                        disabled={colors.length >= 5}
+                        className="p-1.5 text-black hover:bg-gray-50 rounded-md transition-colors disabled:opacity-30" 
+                        title="Add stop"
+                     >
+                        <Plus size={16} />
+                     </button>
                   </div>
-                ))}
-              </div>
+               </div>
+
+               <div className="space-y-3">
+                  {colors.map((color, index) => (
+                    <div key={index} className="flex items-center gap-4 group">
+                       <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button 
+                             onClick={() => moveColor(index, Math.max(0, index - 1))}
+                             disabled={index === 0}
+                             className="p-0.5 text-gray-300 hover:text-black transition-colors disabled:opacity-10"
+                          >
+                             <ArrowRight size={14} className="-rotate-90" />
+                          </button>
+                          <button 
+                             onClick={() => moveColor(index, Math.min(colors.length - 1, index + 1))}
+                             disabled={index === colors.length - 1}
+                             className="p-0.5 text-gray-300 hover:text-black transition-colors disabled:opacity-10"
+                          >
+                             <ArrowRight size={14} className="rotate-90" />
+                          </button>
+                       </div>
+                       
+                       <div className="flex-1 flex items-center gap-3 p-1 border border-gray-50 rounded-md bg-gray-50/30">
+                          <input 
+                            type="color" 
+                            value={color}
+                            onChange={(e) => updateColor(index, e.target.value)}
+                            className="w-10 h-10 rounded border border-gray-100 cursor-pointer overflow-hidden p-0 bg-transparent"
+                          />
+                          <input 
+                            type="text"
+                            value={color}
+                            onChange={(e) => updateColor(index, e.target.value)}
+                            className="bg-transparent text-[13px] font-mono font-bold text-black uppercase focus:outline-none flex-1"
+                          />
+                       </div>
+
+                       <button 
+                          onClick={() => removeColor(index)}
+                          disabled={colors.length <= 2}
+                          className="p-2 text-gray-300 hover:text-red-500 transition-colors disabled:opacity-10"
+                       >
+                          <X size={16} />
+                       </button>
+                    </div>
+                  ))}
+               </div>
             </div>
 
-            {/* Angle Control */}
-            <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-xl">
-              <h3 className="text-lg font-black text-gray-900 mb-6">Direction</h3>
-              <AngleDial angle={angle} onChange={setAngle} />
+            <div className="bg-white p-6 rounded-lg border border-gray-100">
+               <h3 className="text-sm font-bold text-black uppercase tracking-widest mb-8">Direction</h3>
+               <AngleDial angle={angle} onChange={setAngle} />
             </div>
 
-            {/* Export Options */}
-            <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-xl">
-              <h3 className="text-lg font-black text-gray-900 mb-4">Export Options</h3>
-              <div className="space-y-3">
-                <button
-                  onClick={copyCSS}
-                  className="w-full px-4 py-3 bg-black text-white rounded-xl hover:bg-gray-800 transition-colors font-bold text-sm flex items-center justify-center gap-2"
-                >
-                  <Code size={16} />
-                  Copy CSS
-                </button>
-                
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    onClick={() => {
-                      const css = `background: linear-gradient(${angle}deg, ${colors.join(', ')});`;
-                      navigator.clipboard.writeText(css);
-                      addToast('CSS copied!', 'success');
-                    }}
-                    className="px-4 py-3 bg-gray-50 text-gray-700 rounded-xl hover:bg-gray-100 transition-colors font-bold text-sm"
-                  >
-                    CSS
-                  </button>
-                  
-                  <button
-                    onClick={() => {
-                      const svg = `<svg width="400" height="300" xmlns="http://www.w3.org/2000/svg">
-                        <defs>
-                          <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                            ${colors.map((color, i) => 
-                              `<stop offset="${(i / (colors.length - 1)) * 100}%" stop-color="${color}" />`
-                            ).join('\n                            ')}
-                          </linearGradient>
-                        </defs>
-                        <rect width="400" height="300" fill="url(#gradient)" />
-                      </svg>`;
-                      navigator.clipboard.writeText(svg);
-                      addToast('SVG copied!', 'success');
-                    }}
-                    className="px-4 py-3 bg-gray-50 text-gray-700 rounded-xl hover:bg-gray-100 transition-colors font-bold text-sm"
-                  >
-                    SVG
-                  </button>
-                </div>
-              </div>
+            <div className="bg-white p-6 rounded-lg border border-gray-100">
+               <h3 className="text-sm font-bold text-black uppercase tracking-widest mb-6">Library</h3>
+               <div className="grid grid-cols-3 gap-3">
+                 {presetGradients.map((preset, i) => (
+                   <button
+                     key={i}
+                     onClick={() => applyPreset(preset)}
+                     className="h-14 rounded-md border border-gray-100 relative overflow-hidden group transition-transform active:scale-95"
+                     style={{ background: `linear-gradient(45deg, ${preset.colors[0]}, ${preset.colors[preset.colors.length-1]})` }}
+                   >
+                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+                   </button>
+                 ))}
+               </div>
             </div>
           </div>
         </div>
@@ -404,5 +352,6 @@ const GradientMaker = () => {
     </div>
   );
 };
+
 
 export default GradientMaker;

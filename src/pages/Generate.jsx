@@ -8,46 +8,31 @@ import {
   setTheoryRule,
   reorderColors,
   collapseDragHistory,
-  addColumn,
-  removeColumn,
-  toggleLock,
   updateColor,
   setPalette,
   clearHistory,
 } from '../store/slices/paletteSlice';
-import { useAuth } from '../components/AuthProvider';
 import { openAuthModal } from '../store/slices/uiSlice';
-import { addToAllPalettes, toggleFavorite, updatePalette, removeFavorite, replacePalette } from '../store/slices/favoritesSlice';
+import { addToAllPalettes, addPaletteThunk, replacePaletteThunk, toggleFavoriteThunk } from '../store/slices/favoritesSlice';
 import { getColorName } from '../services/colorApi';
 import {
-  Lock,
-  Unlock,
-  Plus,
   X,
-  GripVertical,
   Copy,
   Heart,
   Undo2,
   Redo2,
   Maximize2,
-  Layers,
   ChevronDown,
-  Eye,
   Share2,
-  Bookmark,
-  CheckCircle2,
   Save,
-  Trash2,
-  Check,
-  Sparkles,
-  ExternalLink,
   ArrowLeft,
+  Download
 } from 'lucide-react';
 import { motion, Reorder, AnimatePresence, useDragControls } from 'framer-motion';
-import chroma from 'chroma-js';
 import AuthModal from '../components/AuthModal';
 import ExportModal from '../components/ExportModal';
-import Toast from '../components/Toast';
+import ColorBar from '../components/ColorBar';
+import { useToast } from '../context/ToastContext';
 
 const ModeDropdown = ({ value, onChange }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -57,7 +42,7 @@ const ModeDropdown = ({ value, onChange }) => {
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="h-9 px-8 text-xs font-black bg-white border-2 border-gray-100 rounded-[14px] focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none cursor-pointer transition-all shadow-sm flex items-center gap-2 hover:border-blue-200"
+        className="h-9 px-8 text-xs font-black bg-white border-1 border-gray-100 rounded-[10px] focus:ring-2 focus:ring-black-500/20 focus:border-black outline-none cursor-pointer transition-all shadow-sm flex items-center gap-2 hover:border-gray-500"
       >
         <span>{value}</span>
         <ChevronDown size={14} className={`transition-transform ${isOpen ? 'rotate-180' : ''}`} />
@@ -78,8 +63,8 @@ const ModeDropdown = ({ value, onChange }) => {
                 <button
                   key={mode}
                   onClick={() => { onChange(mode); setIsOpen(false); }}
-                  className={`w-full px-4 py-2.5 text-left text-xs font-black transition-all hover:bg-blue-50 hover:text-blue-600 ${
-                    value === mode ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
+                  className={`w-full px-4 py-2.5 text-left text-xs font-black transition-all hover:bg-gray-50 hover:text-black cursor-pointer ${
+                    value === mode ? 'bg-gray-50 text-black' : 'text-gray-500'
                   }`}
                 >
                   {mode}
@@ -93,239 +78,6 @@ const ModeDropdown = ({ value, onChange }) => {
   );
 };
 
-const ColorBar = ({
-  color, index, total, isDragging,
-  onDragStart, onDragEnd,
-  copyToClipboard, isAuthenticated, dispatch, showNotification,
-  isEditingHex, editingColorId, onHexEditStart, onHexEditChange, onHexEditSubmit,
-}) => {
-  const dragControls = useDragControls();
-  const [colorName, setColorName] = useState('Loading...');
-  const [showShades, setShowShades] = useState(false);
-  const [hexInputValue, setHexInputValue] = useState('');
-  
-  const contrastColor = chroma.contrast(color.hex, 'black') > 4.5 ? 'black' : 'white';
-  const isCurrentlyEditing = isEditingHex && editingColorId === color.id;
-
-  useEffect(() => {
-    if (isCurrentlyEditing) {
-      setHexInputValue(color.hex.replace('#', ''));
-    }
-  }, [isCurrentlyEditing, color.hex]);
-
-  useEffect(() => {
-    const loadColorName = async () => {
-      try {
-        const name = await getColorName(color.hex);
-        setColorName(name);
-      } catch {
-        setColorName(color.hex);
-      }
-    };
-    loadColorName();
-  }, [color.hex]);
-
-  const generateShades = (baseColor) => {
-    const hex = parseInt(baseColor.replace('#', ''), 16);
-    const r = (hex >> 16) & 255;
-    const g = (hex >> 8) & 255;
-    const b = hex & 255;
-    return [1.3, 1.2, 1.1, 1, 0.9, 0.8, 0.7].map((factor) =>
-      '#' +
-      Math.min(255, Math.max(0, Math.round(r * factor))).toString(16).padStart(2, '0') +
-      Math.min(255, Math.max(0, Math.round(g * factor))).toString(16).padStart(2, '0') +
-      Math.min(255, Math.max(0, Math.round(b * factor))).toString(16).padStart(2, '0')
-    );
-  };
-
-  const shades = generateShades(color.hex);
-  const copyColor = (text = color.hex) => copyToClipboard(text.toUpperCase(), 'Color copied!');
-
-  const handleHexClick = () => {
-    if (!isDragging) {
-      onHexEditStart(color.id, color.hex);
-    }
-  };
-
-  const handleHexInputChange = (e) => {
-    const value = e.target.value.replace('#', '').toUpperCase();
-    if (/^[0-9A-F]*$/.test(value)) {
-      setHexInputValue(value);
-      onHexEditChange(color.id, value);
-    }
-  };
-
-  const handleHexInputSubmit = (e) => {
-    if (e.key === 'Enter') {
-      onHexEditSubmit(color.id);
-    } else if (e.key === 'Escape') {
-      onHexEditStart(null, '');
-    }
-  };
-
-  return (
-    <>
-      <Reorder.Item
-        value={color}
-        dragListener={false}
-        dragControls={dragControls}
-        onDragStart={onDragStart}
-        onDragEnd={onDragEnd}
-        className={`flex-1 flex flex-col items-center justify-end pb-8 group h-full relative overflow-hidden transition-colors duration-300 ${
-          isDragging ? 'cursor-grabbing' : ''
-        }`}
-        style={{ backgroundColor: color.hex }}
-      >
-        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity bg-black/5 pointer-events-none" />
-
-        <AnimatePresence>
-          {showShades && (
-            <>
-              <div className="fixed inset-0 z-40" onClick={() => setShowShades(false)} />
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                className="absolute bottom-32 bg-white rounded-[24px] shadow-2xl p-2.5 flex flex-col gap-1.5 z-50 border border-gray-100"
-                onClick={(e) => e.stopPropagation()}
-              >
-                {shades.map((s, i) => (
-                  <div
-                    key={i}
-                    onClick={() => { dispatch(updateColor({ id: color.id, hex: s })); setShowShades(false); }}
-                    className="w-14 h-11 rounded-xl cursor-pointer hover:scale-110 transition-transform shadow-sm"
-                    style={{ backgroundColor: s }}
-                    title={s}
-                  />
-                ))}
-              </motion.div>
-            </>
-          )}
-        </AnimatePresence>
-
-        <div className="flex flex-col gap-3 opacity-0 group-hover:opacity-100 transition-all duration-300 mb-4">
-          <button
-            onClick={() => dispatch(removeColumn(color.id))}
-            disabled={isDragging}
-            className="p-1.5 hover:bg-black/10 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            title="Remove color"
-            style={{ color: contrastColor }}
-          >
-            <X size={16} />
-          </button>
-          <button
-            onClick={() => setShowShades(!showShades)}
-            disabled={isDragging}
-            className={`p-1.5 hover:bg-black/10 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${showShades ? 'bg-black/20' : ''}`}
-            title={showShades ? 'Hide shades' : 'Show shades'}
-            style={{ color: contrastColor }}
-          >
-            <Layers size={16} />
-          </button>
-          <div
-            onPointerDown={(e) => dragControls.start(e)}
-            className="cursor-grab active:cursor-grabbing p-1.5 hover:bg-black/10 rounded-full transition-colors"
-            title="Drag to reorder"
-            style={{ color: contrastColor }}
-          >
-            <GripVertical size={16} />
-          </div>
-          <button
-            onClick={() => copyColor()}
-            disabled={isDragging}
-            className="p-1.5 hover:bg-black/10 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            title="Copy HEX"
-            style={{ color: contrastColor }}
-          >
-            <Copy size={16} />
-          </button>
-          <button
-            onClick={async () => {
-              if (!isAuthenticated) {
-                showNotification('Please sign in to save colors!');
-                dispatch(openAuthModal());
-                return;
-              }
-              const colorName = await getColorName(color.hex);
-              const colorWithName = {
-                ...color,
-                name: colorName
-              };
-              dispatch(addToAllPalettes([colorWithName]));
-              copyColor(color.hex, `${colorName} added to collections!`);
-            }}
-            disabled={isDragging}
-            className="p-1.5 hover:bg-black/10 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            title="Save color"
-            style={{ color: contrastColor }}
-          >
-            <Save size={16} />
-          </button>
-        </div>
-
-        <div className="flex flex-col items-center gap-1 z-10 px-2 w-full">
-          <button
-            onClick={() => dispatch(toggleLock(color.id))}
-            disabled={isDragging}
-            className="p-2 hover:bg-black/10 rounded-xl transition-all mb-1 disabled:opacity-50 disabled:cursor-not-allowed"
-            style={{ color: contrastColor }}
-          >
-            {color.locked ? <Lock size={20} fill="transparent" /> : <Unlock size={20} />}
-          </button>
-          {isCurrentlyEditing ? (
-            <input
-              type="text"
-              value={hexInputValue}
-              onChange={handleHexInputChange}
-              onKeyDown={handleHexInputSubmit}
-              onBlur={() => onHexEditSubmit(color.id)}
-              className="text-lg font-bold tracking-wider bg-transparent border-b-2 border-blue-500 outline-none text-center uppercase mb-1 cursor-text"
-              style={{ color: contrastColor, width: '80px' }}
-              maxLength={6}
-              autoFocus
-            />
-          ) : (
-            <h2
-              className="text-lg font-bold tracking-wider cursor-pointer hover:scale-105 transition-transform uppercase mb-1"
-              onClick={handleHexClick}
-              style={{ color: contrastColor }}
-            >
-              {color.hex.replace('#', '')}
-            </h2>
-          )}
-          <p 
-            className="text-xs font-bold opacity-60 uppercase tracking-wide text-center truncate w-full"
-            style={{ color: contrastColor }}
-          >
-            {colorName}
-          </p>
-        </div>
-      </Reorder.Item>
-      
-      {index < total - 1 && !isDragging && (
-        <div
-          className="absolute z-30 group pointer-events-none"
-          style={{
-            left: `${((index + 1) * 100) / total}%`,
-            top: '60%',
-            transform: 'translate(-50%, -50%)',
-            width: '100px',
-            height: '120px',
-          }}
-        >
-          <button
-            onClick={(e) => { e.stopPropagation(); dispatch(addColumn(index + 1)); }}
-            className="absolute inset-0 flex items-center justify-center pointer-events-auto opacity-0 group-hover:opacity-100 transition-all"
-          >
-            <div className="w-8 h-8 bg-white text-black rounded-full shadow-lg flex items-center justify-center hover:scale-110 transition-all z-10 border border-gray-100">
-              <Plus size={16} />
-            </div>
-          </button>
-        </div>
-      )}
-    </>
-  );
-};
 
 function Generate() {
   const dispatch = useDispatch();
@@ -333,6 +85,7 @@ function Generate() {
   const theoryRule = useSelector((state) => state.palette.theoryRule);
   const history = useSelector((state) => state.palette.history);
   const pointer = useSelector((state) => state.palette.pointer);
+  const palettes = useSelector((state) => state.favorites.palettes);
   const isAuthenticated = useSelector((state) => state.ui.isAuthenticated);
 
   const [isExportOpen, setIsExportOpen] = useState(false);
@@ -344,7 +97,7 @@ function Generate() {
   const [isColorDetailsOpen, setIsColorDetailsOpen] = useState(false);
   const [selectedColorIndex, setSelectedColorIndex] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
-  const [toast, setToast] = useState(null);
+  const { addToast } = useToast();
   const [loadedFromUrl, setLoadedFromUrl] = useState(false);
   const [editingPaletteId, setEditingPaletteId] = useState(null);
   const [isEditingHex, setIsEditingHex] = useState(false);
@@ -370,14 +123,13 @@ function Generate() {
     const newHex = hexEditValues[colorId];
     if (newHex && newHex.length === 6) {
       dispatch(updateColor({ id: colorId, hex: `#${newHex}` }));
-      // Color updated successfully (no notification needed)
     }
     setIsEditingHex(false);
     setEditingColorId(null);
   };
 
   const handleExitEdit = () => {
-    navigate('/Explore');
+    navigate('/explore');
   };
 
   const handleKeyDown = useCallback((e) => {
@@ -399,44 +151,35 @@ function Generate() {
     }
   }, [dispatch, location.hash, loadedFromUrl, handleExitEdit]);
 
-  const showNotification = useCallback((message, type = 'success') => {
-    const id = Date.now();
-    setToast({ id, message, type });
-  }, []);
-
-  const handleToastClose = useCallback((id) => {
-    setToast(null);
-  }, []);
 
   const copyToClipboard = useCallback(async (text, message) => {
     try {
       await navigator.clipboard.writeText(text);
-      showNotification(message || 'Copied!');
+      addToast(message || 'Copied!');
     } catch {
-      showNotification('Failed to copy');
+      addToast('Failed to copy', 'error');
     }
-  }, [showNotification]);
+  }, [addToast]);
 
   useEffect(() => {
+    if (loadedFromUrl) return;
+    
     const hashColors = location.hash.replace('#', '');
     const paletteParam = searchParams.get('palette');
     let editId = searchParams.get('editId');
     
-    // If editId is not in searchParams, check if it's in the hash
     if (!editId && hashColors.includes('&editId=')) {
       const parts = hashColors.split('&editId=');
-      editId = parts[1]; // Get the part after &editId=
+      editId = parts[1];
     }
 
     const colorsToLoad = hashColors ? hashColors.split('&editId=')[0] : (paletteParam || '');
 
     if (colorsToLoad) {
       try {
-        // Ensure we only process the color part, not the editId
-        const cleanColors = colorsToLoad.split('&')[0]; // Split on & and take first part
+        const cleanColors = colorsToLoad.split('&')[0];
         const colorHexes = cleanColors.split(',').map(hex => hex.trim());
         
-        // Validate hex format before processing
         const validColors = colorHexes.filter(hex => {
           const cleanHex = hex.startsWith('#') ? hex : `#${hex}`;
           return /^#[0-9A-F]{6}$/i.test(cleanHex);
@@ -453,21 +196,21 @@ function Generate() {
           dispatch(clearHistory());
           setLoadedFromUrl(true);
           setEditingPaletteId(editId);
-          showNotification(`Loaded palette with ${paletteColors.length} colors from URL!`);
+          addToast(`Loaded palette with ${paletteColors.length} colors from URL!`);
         } else {
-          showNotification('Invalid color format in URL');
+          addToast('Invalid color format in URL');
         }
       } catch (error) {
         console.error('URL parsing error:', error);
-        showNotification('Failed to load palette from URL');
+        addToast('Failed to load palette from URL');
       }
     }
-  }, [searchParams, location.hash, dispatch, showNotification]);
+  }, [searchParams, location.hash, dispatch, addToast]);
 
   const handleSavePalette = async () => {
     if (!isAuthenticated || isSaving) {
       if (!isAuthenticated) {
-        showNotification('Please sign in to save palettes!');
+        addToast('Please sign in to save palettes!');
         dispatch(openAuthModal());
       }
       return;
@@ -476,13 +219,15 @@ function Generate() {
     setIsSaving(true);
     
     try {
-      // For generation mode, create new palette
-      await new Promise(resolve => setTimeout(resolve, 500)); // Simulate save operation
-      dispatch(addToAllPalettes(colors));
-      showNotification('Palette added to collections!');
+      dispatch(addPaletteThunk({
+        colors: colors,
+        is_public: false
+      }));
+      
+      addToast('Palette saved to your collection!', 'success');
     } catch (error) {
       console.error('Save palette error:', error);
-      showNotification('Failed to save palette. Please try again.');
+      addToast('Failed to save palette. Please try again.', 'error');
     } finally {
       setIsSaving(false);
     }
@@ -491,50 +236,41 @@ function Generate() {
   const handleUpdatePalette = async () => {
     if (!isAuthenticated || isSaving) {
       if (!isAuthenticated) {
-        showNotification('Please sign in to save palettes!');
+        addToast('Please sign in to save palettes!');
         dispatch(openAuthModal());
       }
       return;
     }
     
     if (!editingPaletteId) {
-      showNotification('Error: No palette ID found for editing');
+      addToast('Error: No palette ID found for editing');
       return;
     }
     
     setIsSaving(true);
     
     try {
-      // For edit mode with existing palette ID, use atomic replace
-      await new Promise(resolve => setTimeout(resolve, 500)); // Simulate save operation
-      dispatch(replacePalette({
+      await dispatch(replacePaletteThunk({
         id: editingPaletteId,
         colors: colors,
         name: 'Custom Palette',
         isFavorite: false,
         collectionIds: [],
         collectionId: null
-      }));
-      showNotification('Palette updated successfully!');
+      })).unwrap();
       
-      // Navigate back after successful update
+      addToast('Palette updated successfully!', 'success');
+      
       setTimeout(() => {
-        navigate('/Explore');
+        navigate('/explore');
       }, 1000);
     } catch (error) {
       console.error('Update palette error:', error);
-      showNotification('Failed to update palette. Please try again.');
+      addToast(typeof error === 'string' ? error : 'Failed to update palette. Please try again.', 'error');
     } finally {
       setIsSaving(false);
     }
   };
-
-  const handleViewColorDetails = () => {
-    if (colors.length === 0) { showNotification('Please generate a palette first!'); return; }
-    setIsColorDetailsOpen(true);
-    setSelectedColorIndex(0);
-  };
-
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
@@ -542,7 +278,7 @@ function Generate() {
 
   return (
     <div className={`flex flex-col overflow-hidden bg-white transition-all duration-300 ${
-      isFullscreen ? 'fixed inset-0 z-[9999] h-screen' : 'h-[calc(100vh-4rem)]'
+      isFullscreen ? 'fixed inset-0 z-[9999] h-screen' : 'h-[calc(100vh-3.5rem)]'
     } ${isDragging ? 'select-none' : ''}`}>
 
       <div className={`h-14 border-b border-gray-100 flex items-center justify-between px-6 bg-white z-30 ${
@@ -551,23 +287,22 @@ function Generate() {
         <div className="flex items-center gap-8">
           {loadedFromUrl ? (
             <div className="flex items-center gap-4">
-              <span className="text-sm font-semibold text-blue-600">Edit Mode</span>
+              <span className="text-[11px] font-bold uppercase tracking-widest text-black">Edit Mode</span>
               <button
                 onClick={handleExitEdit}
-                className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors text-sm font-medium text-gray-700"
+                className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 hover:bg-gray-100 rounded-md transition-colors text-[13px] font-bold text-gray-600 border border-gray-100"
               >
-                <ArrowLeft size={16} />
+                <ArrowLeft size={14} />
                 Exit
               </button>
             </div>
           ) : (
             <>
-              <span className="text-sm text-gray-400 font-medium">
-                Press <kbd className="bg-gray-100 px-1 py-0.5 rounded text-xs">Space</kbd> to generate!
-                {isFullscreen && <span className="ml-2 text-xs text-blue-600 font-bold">FULLSCREEN MODE</span>}
+              <span className="text-[13px] text-gray-400 font-bold">
+                Press <kbd className="bg-gray-50 border border-gray-100 px-1.5 py-0.5 rounded text-[10px]">Space</kbd> to generate
               </span>
               <div className="flex items-center gap-3">
-                <span className="text-sm font-semibold text-gray-700">Mode:</span>
+                <span className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Mode:</span>
                 <ModeDropdown value={theoryRule} onChange={(mode) => dispatch(setTheoryRule(mode))} />
               </div>
             </>
@@ -575,58 +310,98 @@ function Generate() {
         </div>
 
         <div className="flex items-center gap-1">
-          <div className="flex items-center gap-1 bg-gray-50/50 p-1.5 rounded-2xl border border-gray-100/50">
+          <div className="flex items-center gap-1 bg-gray-50 p-1 rounded-lg border border-gray-100">
             <button
               onClick={() => dispatch(undo())}
               disabled={pointer <= 0}
-              className={`p-2.5 rounded-[12px] transition-all text-sm ${
-                pointer <= 0 ? 'text-gray-200 cursor-not-allowed' : 'text-black bg-white shadow-sm cursor-pointer'
+              className={`p-2 rounded-md transition-all text-sm  ${
+                pointer <= 0 ? 'text-gray-200 cursor-not-allowed' : 'text-black bg-white cursor-pointer shadow-sm border border-gray-100'
               }`}
               title="Undo"
             >
-              <Undo2 size={20} strokeWidth={2.5} />
+              <Undo2 size={16} />
             </button>
             <button
               onClick={() => dispatch(redo())}
               disabled={pointer >= history.length - 1}
-              className={`p-2.5 rounded-[12px] transition-all text-sm ${
-                pointer >= history.length - 1 ? 'text-gray-200 cursor-not-allowed' : 'text-black bg-white shadow-sm cursor-pointer'
+              className={`p-2 rounded-md transition-all text-sm  ${
+                pointer >= history.length - 1 ? 'text-gray-200 cursor-not-allowed' : 'text-black cursor-pointer bg-white shadow-sm border border-gray-100'
               }`}
               title="Redo"
             >
-              <Redo2 size={20} strokeWidth={2.5} />
+              <Redo2 size={16} />
             </button>
           </div>
           <div className="w-px h-6 bg-gray-200 mx-2" />
           <button 
             onClick={loadedFromUrl ? handleUpdatePalette : handleSavePalette} 
             disabled={isDragging || isSaving} 
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed" 
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center min-w-[40px]" 
             title={loadedFromUrl ? "Update palette" : "Save palette"}
           >
             {isSaving ? (
-              <div className="w-4 h-4 border-2 border-gray-300 border-t-transparent animate-spin rounded-full">
-                <div className="w-2 h-2 border-2 border-gray-300 border-t-transparent rounded-full"></div>
-              </div>
+              <div className="w-5 h-5 border-2 border-primary border-t-transparent animate-spin rounded-full"></div>
             ) : (
               <Save size={20} />
             )}
           </button>
-          {loadedFromUrl && (
-            <button 
-              onClick={() => {
-                const colorParams = colors.map(c => c.hex).join(',');
-                navigator.clipboard.writeText(`${window.location.origin}/Generate?palette=${colorParams}`);
-                showNotification('Palette URL copied to clipboard!');
-              }} 
-              className="p-2 hover:bg-blue-100 rounded-lg transition-colors text-blue-600" 
-              title="Copy palette URL"
-            >
-              <Share2 size={20} />
-            </button>
-          )}
+          
+          <button
+            onClick={() => {
+              if (!isAuthenticated) {
+                addToast('Please sign in to favorite palettes!');
+                dispatch(openAuthModal());
+                return;
+              }
+              const colorString = colors.map(c => c.hex).join(',');
+              const existingPalette = palettes.find(p => p.colors.map(c => c.hex).join(',') === colorString);
+              
+              if (existingPalette) {
+                dispatch(toggleFavoriteThunk(existingPalette));
+                addToast(existingPalette.isFavorite ? 'Removed from favorites' : 'Added to favorites', existingPalette.isFavorite ? 'error' : 'success');
+              } else {
+                dispatch(addPaletteThunk({
+                  name: `Palette ${new Date().toLocaleDateString()}`,
+                  colors: colors,
+                  is_public: false,
+                  isFavorite: true
+                }));
+                addToast('Palette saved and added to favorites!', 'success');
+              }
+            }}
+            className="p-2 hover:bg-red-50 rounded-lg transition-colors text-red-500 cursor-pointer"
+            title="Favorite palette"
+          >
+            <Heart 
+              size={20} 
+              fill={palettes?.some(p => p.isFavorite && p.colors.map(c => c.hex).join(',') === colors.map(c => c.hex).join(',')) ? 'currentColor' : 'none'} 
+            />
+          </button>
+
+          <button 
+            onClick={() => {
+              const colorParams = colors.map(c => c.hex.replace('#', '')).join(',');
+              const shareUrl = `${window.location.origin}/Generate?palette=${colorParams}`;
+              navigator.clipboard.writeText(shareUrl);
+              addToast('Palette link copied to clipboard!', 'success');
+            }} 
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-600 cursor-pointer" 
+            title="Share palette"
+          >
+            <Share2 size={20} />
+          </button>
+          
           <div className="w-px h-6 bg-gray-200 mx-2" />
-          <button onClick={() => setIsFullscreen(f => !f)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-600" title={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}>
+          
+          <button 
+            onClick={() => setIsExportOpen(true)}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-600 cursor-pointer" 
+            title="Export palette"
+          >
+            <Download size={20} />
+          </button>
+          <div className="w-px h-6 bg-gray-200 mx-2" />
+          <button onClick={() => setIsFullscreen(f => !f)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-600 cursor-pointer" title={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}>
             <Maximize2 size={20} />
           </button>
         </div>
@@ -658,8 +433,7 @@ function Generate() {
             }}
             copyToClipboard={copyToClipboard}
             isAuthenticated={isAuthenticated}
-            dispatch={dispatch}
-            showNotification={showNotification}
+            addToast={addToast}
             isEditingHex={isEditingHex}
             editingColorId={editingColorId}
             onHexEditStart={handleHexEditStart}
@@ -763,7 +537,7 @@ function Generate() {
                       <button
                         onClick={async () => {
                           if (!isAuthenticated) {
-                            showNotification('Please sign in to save colors!');
+                            addToast('Please sign in to save colors!');
                             dispatch(openAuthModal());
                             return;
                           }
@@ -774,7 +548,7 @@ function Generate() {
                             name: colorName
                           };
                           dispatch(addToAllPalettes([colorWithName]));
-                          showNotification(`${colorName} added to collections!`);
+                          addToast(`${colorName} added to collections!`);
                         }}
                         className="py-3 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors flex items-center justify-center gap-2"
                       >
@@ -789,13 +563,6 @@ function Generate() {
         )}
       </AnimatePresence>
 
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => handleToastClose(toast.id)}
-        />
-      )}
       <AuthModal />
       <ExportModal isOpen={isExportOpen} onClose={() => setIsExportOpen(false)} />
     </div>

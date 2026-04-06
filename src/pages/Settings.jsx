@@ -112,18 +112,18 @@ const Settings = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200">
-          <div className="p-6 border-b border-gray-200">
-            <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
-            <p className="text-gray-600 mt-1">Manage your account and preferences</p>
+      <div className="max-w-4xl mx-auto px-8 py-12">
+        <div className="bg-white rounded-lg border border-gray-100">
+          <div className="p-8 border-b border-gray-50">
+            <h1 className="text-3xl font-bold text-black uppercase tracking-widest">Configuration</h1>
+            <p className="text-[13px] font-medium text-gray-400 uppercase tracking-widest mt-1">Platform Settings & Auth</p>
           </div>
 
-          <div className="p-6 space-y-8">
+          <div className="p-8 space-y-8">
             {settingsSections.map((section, sectionIndex) => (
               <div key={sectionIndex}>
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">{section.title}</h2>
-                <div className="space-y-2">
+                <h2 className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-4">{section.title}</h2>
+                <div className="space-y-1">
                   {section.items.map((item, itemIndex) => (
                     <div
                       key={itemIndex}
@@ -131,12 +131,12 @@ const Settings = () => {
                       className="flex items-center justify-between p-4 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer group"
                     >
                       <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center text-gray-600 group-hover:text-blue-600 transition-colors">
+                        <div className="w-10 h-10 bg-white border border-gray-100 rounded-lg flex items-center justify-center text-gray-400 group-hover:text-black transition-colors">
                           {item.icon}
                         </div>
                         <div>
-                          <h3 className="font-medium text-gray-900">{item.label}</h3>
-                          <p className="text-sm text-gray-500">{item.description}</p>
+                          <h3 className="text-[13px] font-bold text-black">{item.label}</h3>
+                          <p className="text-[11px] font-medium text-gray-400">{item.description}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
@@ -146,19 +146,19 @@ const Settings = () => {
                               e.stopPropagation()
                               item.onToggle()
                             }}
-                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                              item.toggle ? 'bg-blue-600' : 'bg-gray-200'
+                            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors border ${
+                              item.toggle ? 'bg-black border-black' : 'bg-gray-100 border-gray-200'
                             }`}
                           >
                             <span
-                              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                                item.toggle ? 'translate-x-6' : 'translate-x-1'
+                              className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
+                                item.toggle ? 'translate-x-[1.125rem]' : 'translate-x-[0.125rem]'
                               }`}
                             />
                           </button>
                         ) : (
                           <>
-                            <ChevronRight size={20} className="text-gray-400 group-hover:text-gray-600 transition-colors" />
+                            <ChevronRight size={14} className="text-gray-300 group-hover:text-black transition-colors" />
                           </>
                         )}
                       </div>
@@ -168,16 +168,16 @@ const Settings = () => {
               </div>
             ))}
 
-            <div className="pt-8 border-t border-gray-200">
+            <div className="pt-8 border-t border-gray-50">
               <button
                 onClick={async () => {
                   await supabase.auth.signOut()
                   dispatch(logout())
                 }}
-                className="flex items-center gap-3 p-4 rounded-lg hover:bg-red-50 transition-colors cursor-pointer group w-full"
+                className="flex items-center gap-3 p-4 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer group w-full"
               >
-                <LogOut size={20} className="text-red-600" />
-                <span className="font-medium text-red-600">Sign Out</span>
+                <LogOut size={16} className="text-rose-500" />
+                <span className="text-[13px] font-bold text-rose-500 uppercase tracking-widest">Terminate Session</span>
               </button>
             </div>
           </div>

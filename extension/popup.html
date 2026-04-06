@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body {
+      width: 320px;
+      padding: 16px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: #ffffff;
+      margin: 0;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .logo {
+      font-weight: 900;
+      font-size: 18px;
+      letter-spacing: -0.5px;
+      color: #111;
+    }
+    .color-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      max-height: 240px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+    .color-item {
+      aspect-ratio: 1;
+      border-radius: 8px;
+      cursor: pointer;
+      border: 1px solid rgba(0,0,0,0.05);
+      transition: transform 0.2s;
+      position: relative;
+    }
+    .color-item:hover {
+      transform: scale(1.1);
+      z-index: 1;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .color-item.selected {
+      border: 2px solid #000;
+    }
+    .footer {
+      margin-top: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      border-radius: 12px;
+      border: none;
+      font-weight: 800;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 14px;
+    }
+    .btn-extract {
+      background: #f5f5f5;
+      color: #111;
+    }
+    .btn-save {
+      background: #000;
+      color: #fff;
+    }
+    .btn-save:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    .status {
+      font-size: 11px;
+      text-align: center;
+      color: #888;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo">Qolors Collector</div>
+  </div>
+  
+  <div id="no-colors" style="text-align: center; color: #888; padding: 20px 0;">
+    Click "Extract" to find colors on this page.
+  </div>
+  
+  <div class="color-grid" id="color-grid"></div>
+
+  <div class="footer">
+    <button class="btn-extract" id="extract-btn">Extract Colors</button>
+    <button class="btn-save" id="save-btn" disabled>Save to Qolors</button>
+    <div class="status" id="status">Syncing with your account...</div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

@@ -9,7 +9,7 @@ import { ToastProvider } from './context/ToastContext'
 import { initializePalette } from './store/slices/paletteSlice'
 import Home from './pages/Home'
 import Generate from './pages/Generate'
-import Favorites from './pages/Favorites'
+import Collections from './pages/Collections'
 import Explore from './pages/Explore'
 import Settings from './pages/Settings'
 import Notifications from './pages/Notifications'
@@ -17,6 +17,7 @@ import Contrast from './pages/Contrast'
 import Visualizer from './pages/Visualizer'
 import ImagePicker from './pages/ImagePicker'
 import GradientMaker from './pages/GradientMaker'
+import Tools from './pages/Tools'
 
 // Initialize the palette history when the app starts
 store.dispatch(initializePalette())
@@ -35,8 +36,8 @@ const router = createBrowserRouter([
         element: <Generate />
       },
       {
-        path: "/favorites",
-        element: <Favorites />
+        path: "/collections",
+        element: <Collections />
       },
       {
         path: "/explore",
@@ -66,6 +67,10 @@ const router = createBrowserRouter([
         path: "/gradient",
         element: <GradientMaker />
       },
+      {
+        path: "/tools",
+        element: <Tools />
+      },
     ]
   }
 ])
@@ -73,9 +78,7 @@ const router = createBrowserRouter([
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <Provider store={store}>
-      <ToastProvider>
-        <RouterProvider router={router} />
-      </ToastProvider>
+      <RouterProvider router={router} />
     </Provider>
   </React.StrictMode>,
 )

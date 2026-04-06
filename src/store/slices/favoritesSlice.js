@@ -1,46 +1,247 @@
-import { createSlice } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { supabase } from '../../services/supabase';
 import chroma from 'chroma-js';
 
 const loadFavorites = () => {
   try {
-    const saved = localStorage.getItem('quolors_favorites');
+    const saved = localStorage.getItem('qolors_favorites');
     if (saved) {
       const data = JSON.parse(saved);
-      // Preserve existing collections and palettes
+      const collections = data.collections || [];
+      const hasFavorites = collections.some(c => c.id === 'favorites-collection');
+      
       return { 
         palettes: data.palettes || [], 
-        collections: data.collections || [
-          {
-            id: 'favorites-collection',
-            name: 'Favorites',
-            date: new Date().toISOString()
-          }
-        ]
+        collections: hasFavorites ? collections : [
+          { id: 'favorites-collection', name: 'Favorites', date: new Date().toISOString() },
+          ...collections
+        ],
+        loading: false,
+        error: null
       };
     }
     return { 
       palettes: [], 
-      collections: [
-        {
-          id: 'favorites-collection',
-          name: 'Favorites',
-          date: new Date().toISOString()
-        }
-      ]
+      collections: [{ id: 'favorites-collection', name: 'Favorites', date: new Date().toISOString() }],
+      loading: false,
+      error: null
     };
   } catch {
     return { 
       palettes: [], 
-      collections: [
-        {
-          id: 'favorites-collection',
-          name: 'Favorites',
-          date: new Date().toISOString()
-        }
-      ]
+      collections: [{ id: 'favorites-collection', name: 'Favorites', date: new Date().toISOString() }],
+      loading: false,
+      error: null
     };
   }
 };
+
+const isUUID = (id) => {
+  if (!id || typeof id !== 'string') return false;
+  const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+  return uuidRegex.test(id);
+};
+
+
+export const fetchUserPalettes = createAsyncThunk(
+  'favorites/fetchUserPalettes',
+  async (_, { rejectWithValue }) => {
+    try {
+      const { data: palettes, error: pError } = await supabase
+        .from('palettes')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (pError) throw pError;
+
+      const { data: collections, error: cError } = await supabase
+        .from('collections')
+        .select('*');
+
+      if (cError) throw cError;
+
+      return { palettes, collections: collections.length > 0 ? collections : [{ id: 'favorites-collection', name: 'Favorites' }] };
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  }
+);
+
+export const addPaletteThunk = createAsyncThunk(
+  'favorites/addPaletteThunk',
+  async (palette, { getState, dispatch, rejectWithValue }) => {
+    dispatch(addToAllPalettes(palette));
+
+    const { ui, favorites } = getState();
+    if (!ui.isAuthenticated) return null;
+
+    try {
+      const paletteToSave = {
+        user_id: ui.user.id,
+        name: palette.name || 'Untitled Palette',
+        colors: palette.colors,
+        is_favorite: palette.isFavorite || false,
+        is_public: palette.is_public !== undefined ? palette.is_public : false, 
+        updated_at: new Date().toISOString()
+      };
+
+      const { data, error } = await supabase
+        .from('palettes')
+        .upsert(paletteToSave)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  }
+);
+
+export const toggleFavoriteThunk = createAsyncThunk(
+  'favorites/toggleFavoriteThunk',
+  async (paletteData, { getState, dispatch, rejectWithValue }) => {
+    const { ui, favorites } = getState();
+    const pId = typeof paletteData === 'string' ? paletteData : paletteData.id;
+    let palette = favorites.palettes.find(p => p.id === pId || p.supabase_id === pId);
+    
+    if (!palette && typeof paletteData === 'object') {
+      await dispatch(addPaletteThunk({
+        ...paletteData,
+        isFavorite: true,
+        is_public: false
+      })).unwrap();
+      return { id: pId, isFavorite: true };
+    }
+
+    if (!palette) return rejectWithValue('Palette not found');
+
+    dispatch(toggleFavorite(palette.id));
+
+    if (!ui.isAuthenticated) return { id: palette.id, isFavorite: !palette.isFavorite };
+
+    try {
+      const { error } = await supabase
+        .from('palettes')
+        .update({ is_favorite: !palette.isFavorite })
+        .eq('id', palette.supabase_id || palette.id);
+
+      if (error) throw error;
+      return { id: palette.id, isFavorite: !palette.isFavorite };
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  }
+);
+
+export const deletePaletteThunk = createAsyncThunk(
+  'favorites/deletePaletteThunk',
+  async (paletteId, { getState, dispatch, rejectWithValue }) => {
+    const { ui, favorites } = getState();
+    const palette = favorites.palettes.find(p => p.id === paletteId);
+    
+    dispatch(removeFavorite(paletteId));
+
+    if (!ui.isAuthenticated || !palette?.supabase_id) return null;
+
+    try {
+      const { error } = await supabase
+        .from('palettes')
+        .delete()
+        .eq('id', palette.supabase_id);
+
+      if (error) throw error;
+      return true;
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  }
+);
+
+export const updatePaletteNameThunk = createAsyncThunk(
+  'favorites/updatePaletteNameThunk',
+  async ({ paletteId, name }, { getState, dispatch, rejectWithValue }) => {
+    const { ui, favorites } = getState();
+    const palette = favorites.palettes.find(p => p.id === paletteId);
+    
+    dispatch(updatePaletteName({ paletteId, name }));
+
+    if (!ui.isAuthenticated || !palette?.supabase_id) return null;
+
+    try {
+      const { error } = await supabase
+        .from('palettes')
+        .update({ name })
+        .eq('id', palette.supabase_id);
+
+      if (error) throw error;
+      return true;
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  }
+);
+
+export const replacePaletteThunk = createAsyncThunk(
+  'favorites/replacePaletteThunk',
+  async (palette, { getState, dispatch, rejectWithValue }) => {
+    dispatch(replacePalette(palette));
+
+    const { ui } = getState();
+    if (!ui.isAuthenticated) return null;
+
+    try {
+      const paletteId = palette.supabase_id || palette.id;
+      const paletteToUpsert = {
+        user_id: ui.user.id,
+        name: palette.name,
+        colors: palette.colors,
+        is_favorite: palette.isFavorite,
+        updated_at: new Date().toISOString()
+      };
+
+      if (isUUID(paletteId)) {
+        paletteToUpsert.id = paletteId;
+      }
+
+      const { data, error } = await supabase
+        .from('palettes')
+        .upsert(paletteToUpsert)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  }
+);
+
+export const togglePublicStatusThunk = createAsyncThunk(
+  'favorites/togglePublicStatusThunk',
+  async ({ paletteId, isPublic }, { getState, dispatch, rejectWithValue }) => {
+    const { ui, favorites } = getState();
+    const palette = favorites.palettes.find(p => p.id === paletteId);
+    
+    dispatch(setPalettePublicStatus({ paletteId, isPublic }));
+
+    if (!ui.isAuthenticated || !palette?.supabase_id) return null;
+
+    try {
+      const { error } = await supabase
+        .from('palettes')
+        .update({ is_public: isPublic })
+        .eq('id', palette.supabase_id);
+
+      if (error) throw error;
+      return true;
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  }
+);
 
 const initialState = loadFavorites();
 
@@ -77,79 +278,66 @@ const favoritesSlice = createSlice({
   initialState,
   reducers: {
     addToAllPalettes: (state, action) => {
-      const palette = action.payload; // array of colors or single palette object
+      const palette = action.payload;
       let paletteId, paletteData;
       
-      // Handle array of colors (most common case from Generate page)
       if (Array.isArray(palette)) {
         paletteId = palette.map(c => c.hex).join('-');
-        // For single colors, use the actual color name if available
         const paletteName = palette.length === 1 && palette[0].name 
           ? palette[0].name 
-          : generatePaletteName(palette);
+          : generatePaletteName(palette.map(c => c.hex));
         paletteData = {
           id: paletteId,
           name: paletteName,
           colors: palette,
           date: new Date().toISOString(),
-          isFavorite: false, // Not favorited by default
-          collectionIds: [] // Not in any collection initially
+          isFavorite: false,
+          collectionIds: []
         };
       } else if (palette.id && palette.colors) {
-        // Complete palette object from Explore page
         paletteId = palette.id;
         paletteData = {
           id: paletteId,
           name: palette.name,
           colors: palette.colors,
           date: palette.date || new Date().toISOString(),
-          isFavorite: false, // Not favorited by default
-          collectionIds: [] // Not in any collection initially
+          isFavorite: palette.isFavorite || false,
+          is_public: palette.is_public || false,
+          collectionIds: palette.collectionIds || []
         };
       } else {
-        // Fallback for any other format
-        console.error('Invalid palette data:', palette);
         return;
       }
       
-      // Check if palette already exists
       const index = state.palettes.findIndex(p => p.id === paletteId);
-      if (index >= 0) {
-        // Palette already exists, don't add duplicate
-        return;
-      }
+      if (index >= 0) return;
       
       state.palettes.push(paletteData);
-      localStorage.setItem('quolors_favorites', JSON.stringify(state));
+      localStorage.setItem('qolors_favorites', JSON.stringify(state));
     },
     toggleFavorite: (state, action) => {
       const paletteId = action.payload;
       const palette = state.palettes.find(p => p.id === paletteId);
       
       if (palette) {
-        // Toggle the favorite status
         palette.isFavorite = !palette.isFavorite;
-        
-        // If favorited, add to favorites collection
         if (palette.isFavorite) {
           if (!palette.collectionIds) palette.collectionIds = [];
           if (!palette.collectionIds.includes('favorites-collection')) {
             palette.collectionIds.push('favorites-collection');
           }
         } else {
-          // Remove from favorites collection but keep in other collections
           if (palette.collectionIds) {
             palette.collectionIds = palette.collectionIds.filter(id => id !== 'favorites-collection');
           }
         }
-        
-        localStorage.setItem('quolors_favorites', JSON.stringify(state));
+        localStorage.setItem('qolors_favorites', JSON.stringify(state));
       }
     },
     removeFavorite: (state, action) => {
       const paletteId = action.payload;
       state.palettes = state.palettes.filter(p => p.id !== paletteId);
-      localStorage.setItem('quolors_favorites', JSON.stringify(state));
+      localStorage.setItem('qolors_favorites', JSON.stringify(state));
     },
     createCollection: (state, action) => {
       state.collections.push({
@@ -157,54 +345,39 @@ const favoritesSlice = createSlice({
         name: action.payload,
         date: new Date().toISOString()
       });
-      localStorage.setItem('quolors_favorites', JSON.stringify(state));
+      localStorage.setItem('qolors_favorites', JSON.stringify(state));
     },
     deleteCollection: (state, action) => {
       state.collections = state.collections.filter(c => c.id !== action.payload);
-      // Move palettes from deleted collection to Favorites collection
-      state.palettes.forEach(p => {
-        if (p.collectionId === action.payload) {
-          p.collectionId = 'favorites-collection';
-        }
-      });
-      localStorage.setItem('quolors_favorites', JSON.stringify(state));
+      localStorage.setItem('qolors_favorites', JSON.stringify(state));
     },
     addToCollection: (state, action) => {
-        const { paletteId, collectionId } = action.payload;
-        const palette = state.palettes.find(p => p.id === paletteId);
-        if (palette) {
-          // Initialize collectionIds array if it doesn't exist
-          if (!palette.collectionIds) {
-            palette.collectionIds = palette.collectionId ? [palette.collectionId] : [];
-            // Clear the old collectionId since we're using collectionIds now
-            delete palette.collectionId;
-          }
-          // Add to collection if not already there
-          if (!palette.collectionIds.includes(collectionId)) {
-            palette.collectionIds.push(collectionId);
-          }
+      const { paletteId, collectionId } = action.payload;
+      const palette = state.palettes.find(p => p.id === paletteId);
+      if (palette) {
+        if (!palette.collectionIds) palette.collectionIds = [];
+        if (!palette.collectionIds.includes(collectionId)) {
+          palette.collectionIds.push(collectionId);
         }
-      localStorage.setItem('quolors_favorites', JSON.stringify(state));
+      }
+      localStorage.setItem('qolors_favorites', JSON.stringify(state));
     },
     removeFromCollection: (state, action) => {
-        const { paletteId, collectionId } = action.payload;
-        const palette = state.palettes.find(p => p.id === paletteId);
-        if (palette && palette.collectionIds) {
-          palette.collectionIds = palette.collectionIds.filter(id => id !== collectionId);
-          // If palette is not in any collection, remove it entirely
-          if (palette.collectionIds.length === 0) {
-            state.palettes = state.palettes.filter(p => p.id !== paletteId);
-          }
+      const { paletteId, collectionId } = action.payload;
+      const palette = state.palettes.find(p => p.id === paletteId);
+      if (palette && palette.collectionIds) {
+        palette.collectionIds = palette.collectionIds.filter(id => id !== collectionId);
+        if (palette.collectionIds.length === 0) {
+          state.palettes = state.palettes.filter(p => p.id !== paletteId);
         }
-      localStorage.setItem('quolors_favorites', JSON.stringify(state));
+      }
+      localStorage.setItem('qolors_favorites', JSON.stringify(state));
     },
     updatePaletteName: (state, action) => {
       const { paletteId, name } = action.payload;
       const palette = state.palettes.find(p => p.id === paletteId);
-      if (palette) {
-        palette.name = name;
-      }
-      localStorage.setItem('quolors_favorites', JSON.stringify(state));
+      if (palette) palette.name = name;
+      localStorage.setItem('qolors_favorites', JSON.stringify(state));
     },
     updatePalette: (state, action) => {
       const { id, colors, name } = action.payload;
@@ -214,68 +387,101 @@ const favoritesSlice = createSlice({
         if (name) palette.name = name;
         palette.date = new Date().toISOString();
       }
-      localStorage.setItem('quolors_favorites', JSON.stringify(state));
+      localStorage.setItem('qolors_favorites', JSON.stringify(state));
     },
     replacePalette: (state, action) => {
-      const { id, colors, name, isFavorite, collectionIds, collectionId } = action.payload;
-      const existingIndex = state.palettes.findIndex(p => p.id === id);
-      
-      if (existingIndex !== -1) {
-        // Replace existing palette
-        state.palettes[existingIndex] = {
-          id,
-          name: name || 'Custom Palette',
-          colors,
-          date: new Date().toISOString(),
-          isFavorite: isFavorite || false,
-          collectionIds: collectionIds || [],
-          collectionId: collectionId || null
-        };
-      } else {
-        // Add new palette if not found
-        state.palettes.push({
-          id,
-          name: name || 'Custom Palette',
-          colors,
-          date: new Date().toISOString(),
-          isFavorite: isFavorite || false,
-          collectionIds: collectionIds || [],
-          collectionId: collectionId || null
-        });
-      }
-      
-      localStorage.setItem('quolors_favorites', JSON.stringify(state));
+      const { id, colors, name, isFavorite, collectionIds } = action.payload;
+      const index = state.palettes.findIndex(p => p.id === id);
+      const paletteData = { 
+        id, colors, name: name || 'Custom Palette', 
+        isFavorite: isFavorite || false, 
+        collectionIds: collectionIds || [],
+        date: new Date().toISOString()
+      };
+      if (index !== -1) state.palettes[index] = paletteData;
+      else state.palettes.push(paletteData);
+      localStorage.setItem('qolors_favorites', JSON.stringify(state));
     },
     updateCollectionName: (state, action) => {
       const { collectionId, name } = action.payload;
       const collection = state.collections.find(c => c.id === collectionId);
-      if (collection) {
-        collection.name = name;
-      }
-      localStorage.setItem('quolors_favorites', JSON.stringify(state));
+      if (collection) collection.name = name;
+      localStorage.setItem('qolors_favorites', JSON.stringify(state));
     },
     clearAllCollections: (state) => {
-      // Keep only the Favorites collection, remove all others
-      state.collections = [
-        {
-          id: 'favorites-collection',
-          name: 'Favorites',
-          date: new Date().toISOString()
-        }
-      ];
-      // Move all palettes from deleted collections to Favorites collection
-      state.palettes.forEach(p => {
-        if (p.collectionId && p.collectionId !== 'favorites-collection') {
-          p.collectionId = 'favorites-collection';
-        }
-      });
-      localStorage.setItem('quolors_favorites', JSON.stringify(state));
+      state.collections = [{ id: 'favorites-collection', name: 'Favorites', date: new Date().toISOString() }];
+      localStorage.setItem('qolors_favorites', JSON.stringify(state));
     },
     clearAllPalettes: (state) => {
-      // Remove all palettes
       state.palettes = [];
-      localStorage.setItem('quolors_favorites', JSON.stringify(state));
+      localStorage.setItem('qolors_favorites', JSON.stringify(state));
     },
+    setPalettePublicStatus: (state, action) => {
+      const { paletteId, isPublic } = action.payload;
+      const palette = state.palettes.find(p => p.id === paletteId);
+      if (palette) {
+        palette.is_public = isPublic;
+        localStorage.setItem('qolors_favorites', JSON.stringify(state));
+      }
+    },
+  },
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchUserPalettes.pending, (state) => { state.loading = true; })
+      .addCase(fetchUserPalettes.fulfilled, (state, action) => {
+        state.loading = false;
+        if (action.payload) {
+          state.palettes = action.payload.palettes.map(p => ({
+            ...p,
+            id: p.id,
+            supabase_id: p.id,
+            isFavorite: p.is_favorite,
+            collectionIds: p.is_favorite ? ['favorites-collection'] : [],
+            is_public: p.is_public,
+            date: p.created_at
+          }));
+          
+          const serverCollections = action.payload.collections || [];
+          const hasFavorites = serverCollections.some(c => c.id === 'favorites-collection');
+          
+          state.collections = hasFavorites ? serverCollections : [
+            { id: 'favorites-collection', name: 'Favorites', date: new Date().toISOString() },
+            ...serverCollections
+          ];
+        }
+      })
+      .addCase(fetchUserPalettes.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      .addCase(addPaletteThunk.fulfilled, (state, action) => {
+        if (action.payload) {
+          const savedPalette = action.payload;
+          const index = state.palettes.findIndex(p => 
+            p.colors.map(c => c.hex).join(',') === savedPalette.colors.map(c => c.hex).join(',')
+          );
+          
+          if (index !== -1) {
+            state.palettes[index] = {
+              ...state.palettes[index],
+              supabase_id: savedPalette.id,
+              isFavorite: savedPalette.is_favorite,
+              is_public: savedPalette.is_public,
+              date: savedPalette.created_at
+            };
+          } else {
+            state.palettes.unshift({
+                ...savedPalette,
+                id: savedPalette.id,
+                supabase_id: savedPalette.id,
+                isFavorite: savedPalette.is_favorite,
+                is_public: savedPalette.is_public,
+                date: savedPalette.created_at
+            });
+          }
+          localStorage.setItem('qolors_favorites', JSON.stringify(state));
+        }
+      });
   },
 });
 
@@ -292,7 +498,8 @@ export const {
   replacePalette,
   updateCollectionName,
   clearAllCollections,
-  clearAllPalettes
+  clearAllPalettes,
+  setPalettePublicStatus
 } = favoritesSlice.actions;
 
 export default favoritesSlice.reducer;
