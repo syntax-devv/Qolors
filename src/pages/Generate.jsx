@@ -104,6 +104,7 @@ function Generate() {
   const [editingColorId, setEditingColorId] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const [hexEditValues, setHexEditValues] = useState({});
+  const [mode, setMode] = useState('normal');
 
   const dragStartPointer = useRef(null);
 
@@ -134,7 +135,7 @@ function Generate() {
 
   const handleKeyDown = useCallback((e) => {
     if (e.code === 'Space') { 
-      if (!loadedFromUrl) {
+      if (!loadedFromUrl && mode === 'normal') {
         e.preventDefault(); 
         dispatch(generatePalette()); 
       }
@@ -149,8 +150,7 @@ function Generate() {
         handleExitEdit();
       }
     }
-  }, [dispatch, location.hash, loadedFromUrl, handleExitEdit]);
-
+  }, [dispatch, location.hash, loadedFromUrl, handleExitEdit, mode]);
 
   const copyToClipboard = useCallback(async (text, message) => {
     try {
@@ -285,7 +285,7 @@ function Generate() {
         isFullscreen ? 'px-4' : ''
       }`}>
         <div className="flex items-center gap-8">
-          {loadedFromUrl ? (
+          {mode === 'edit' && loadedFromUrl ? (
             <div className="flex items-center gap-4">
               <span className="text-[11px] font-bold uppercase tracking-widest text-black">Edit Mode</span>
               <button
@@ -295,6 +295,10 @@ function Generate() {
                 <ArrowLeft size={14} />
                 Exit
               </button>
+            </div>
+          ) : mode === 'preview' ? (
+            <div className="flex items-center gap-4">
+              <span className="text-[11px] font-bold uppercase tracking-widest text-black">Preview Mode</span>
             </div>
           ) : (
             <>
@@ -333,11 +337,12 @@ function Generate() {
             </button>
           </div>
           <div className="w-px h-6 bg-gray-200 mx-2" />
+          {mode === 'normal' && (
           <button 
-            onClick={loadedFromUrl ? handleUpdatePalette : handleSavePalette} 
+            onClick={handleSavePalette} 
             disabled={isDragging || isSaving} 
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center min-w-[40px]" 
-            title={loadedFromUrl ? "Update palette" : "Save palette"}
+            title="Save palette"
           >
             {isSaving ? (
               <div className="w-5 h-5 border-2 border-primary border-t-transparent animate-spin rounded-full"></div>
@@ -345,8 +350,25 @@ function Generate() {
               <Save size={20} />
             )}
           </button>
+          )}
           
-          <button
+          {mode === 'edit' && loadedFromUrl && (
+          <button 
+            onClick={handleUpdatePalette} 
+            disabled={isDragging || isSaving} 
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center min-w-[40px]" 
+            title="Update palette"
+          >
+            {isSaving ? (
+              <div className="w-5 h-5 border-2 border-primary border-t-transparent animate-spin rounded-full"></div>
+            ) : (
+              <Save size={20} />
+            )}
+          </button>
+          )}
+          
+          {mode === 'normal' && (
+          <button 
             onClick={() => {
               if (!isAuthenticated) {
                 addToast('Please sign in to favorite palettes!');
@@ -377,6 +399,7 @@ function Generate() {
               fill={palettes?.some(p => p.isFavorite && p.colors.map(c => c.hex).join(',') === colors.map(c => c.hex).join(',')) ? 'currentColor' : 'none'} 
             />
           </button>
+          )}
 
           <button 
             onClick={() => {

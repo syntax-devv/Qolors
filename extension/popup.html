@@ -1,103 +1,264 @@
 <!DOCTYPE html>
-<html>
+<html class="light" lang="en">
 <head>
-  <style>
-    body {
-      width: 320px;
-      padding: 16px;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      background: #ffffff;
-      margin: 0;
-    }
-    .header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 20px;
-    }
-    .logo {
-      font-weight: 900;
-      font-size: 18px;
-      letter-spacing: -0.5px;
-      color: #111;
-    }
-    .color-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 8px;
-      max-height: 240px;
-      overflow-y: auto;
-      padding-right: 4px;
-    }
-    .color-item {
-      aspect-ratio: 1;
-      border-radius: 8px;
-      cursor: pointer;
-      border: 1px solid rgba(0,0,0,0.05);
-      transition: transform 0.2s;
-      position: relative;
-    }
-    .color-item:hover {
-      transform: scale(1.1);
-      z-index: 1;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    }
-    .color-item.selected {
-      border: 2px solid #000;
-    }
-    .footer {
-      margin-top: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-    button {
-      width: 100%;
-      padding: 12px;
-      border-radius: 12px;
-      border: none;
-      font-weight: 800;
-      cursor: pointer;
-      transition: all 0.2s;
-      font-size: 14px;
-    }
-    .btn-extract {
-      background: #f5f5f5;
-      color: #111;
-    }
-    .btn-save {
-      background: #000;
-      color: #fff;
-    }
-    .btn-save:disabled {
-      background: #ccc;
-      cursor: not-allowed;
-    }
-    .status {
-      font-size: 11px;
-      text-align: center;
-      color: #888;
-      margin-top: 8px;
-    }
-  </style>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <style>
+        /* Base Styles & Reset */
+        * { box-sizing: border-box; -webkit-font-smoothing: antialiased; }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            width: 375px;
+            height: 600px;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f7f9;
+            color: #2c2f31;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; /* Prevent body scroll, use container scroll */
+        }
+
+        /* Layout Components */
+        header {
+            height: 56px;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            border-bottom: 1px solid #e5e7eb;
+            z-index: 100;
+        }
+
+        main {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 16px;
+            padding-bottom: 20px;
+        }
+
+        nav {
+            height: 64px;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding-bottom: 4px;
+        }
+
+        /* Typography & Utilities */
+        .text-primary { color: #0050d4; }
+        .bg-primary { background-color: #0050d4; }
+        .text-xs { font-size: 11px; }
+        .text-sm { font-size: 13px; }
+        .font-bold { font-weight: 700; }
+        .rounded-xl { border-radius: 12px; }
+        .shadow-sm { box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+
+        /* Navigation Items */
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: #595c5e;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 60px;
+        }
+        .nav-item .material-symbols-outlined { font-size: 24px; margin-bottom: 2px; }
+        .nav-item span { font-size: 10px; font-weight: 500; }
+        .nav-item.active { color: #0050d4; }
+        .nav-item.active .material-symbols-outlined { font-variation-settings: 'FILL' 1; }
+
+        /* Scan Hero */
+        .scan-card {
+            background: linear-gradient(135deg, #0050d4 0%, #7b9cff 100%);
+            color: white;
+            padding: 24px;
+            border-radius: 16px;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.2s, opacity 0.2s;
+            box-shadow: 0 8px 20px rgba(0, 80, 212, 0.2);
+        }
+        .scan-card:active { transform: scale(0.97); }
+        .scan-card.loading { opacity: 0.8; pointer-events: none; cursor: wait; }
+
+        /* View Containers */
+        .view-content { display: none; flex-direction: column; width: 100%; }
+        .view-content.active { display: flex; }
+
+        /* Color Grid */
+        .color-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+        .color-swatch {
+            aspect-ratio: 1;
+            border-radius: 8px;
+            border: 1px solid rgba(0,0,0,0.05);
+            cursor: pointer;
+            position: relative;
+            transition: transform 0.1s;
+        }
+        .color-swatch:hover { transform: scale(1.05); }
+        .color-swatch.selected::after {
+            content: 'check_circle';
+            font-family: 'Material Symbols Outlined';
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            text-shadow: 0 1px 4px rgba(0,0,0,0.4);
+            font-size: 20px;
+        }
+
+        /* Font Cards */
+        .font-card {
+            background: white;
+            padding: 12px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            border: 1px solid #e5e7eb;
+        }
+
+        /* Loader */
+        .spinner {
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            display: none;
+            margin: 0 auto 8px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        kbd {
+            background: rgba(0,0,0,0.05);
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-family: monospace;
+        }
+    </style>
 </head>
 <body>
-  <div class="header">
-    <div class="logo">Qolors Collector</div>
-  </div>
-  
-  <div id="no-colors" style="text-align: center; color: #888; padding: 20px 0;">
-    Click "Extract" to find colors on this page.
-  </div>
-  
-  <div class="color-grid" id="color-grid"></div>
 
-  <div class="footer">
-    <button class="btn-extract" id="extract-btn">Extract Colors</button>
-    <button class="btn-save" id="save-btn" disabled>Save to Qolors</button>
-    <div class="status" id="status">Syncing with your account...</div>
-  </div>
+    <header>
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">architecture</span>
+            <span class="font-bold" style="font-size: 16px;">Qolors Collector</span>
+        </div>
+        <button style="border:none; background:none; cursor:pointer; color:#595c5e;">
+            <span class="material-symbols-outlined">settings</span>
+        </button>
+    </header>
 
-  <script src="popup.js"></script>
+    <main id="scroll-container">
+        
+        <!-- SCAN VIEW -->
+        <div id="scan-view" class="view-content active">
+            <div style="text-align: center; margin-bottom: 16px;">
+                <div style="display: inline-flex; align-items: center; background: #eef1f3; padding: 4px 12px; border-radius: 20px; gap: 6px;">
+                    <span class="material-symbols-outlined" style="font-size: 14px;">public</span>
+                    <span id="url-text" class="text-xs" style="max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Loading tab...</span>
+                </div>
+            </div>
+
+            <div class="scan-card" id="scan-trigger">
+                <div class="spinner" id="scan-spinner"></div>
+                <span class="material-symbols-outlined" id="scan-icon" style="font-size: 48px; margin-bottom: 8px;">search</span>
+                <div class="font-bold" style="font-size: 18px;">Scan Current Page</div>
+                <div class="text-xs" id="scan-status" style="opacity: 0.8; margin-top: 4px;">Analyze colors & typography</div>
+            </div>
+
+            <div style="margin-top: 24px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <span class="font-bold text-sm">Recent Activity</span>
+                    <span class="text-primary text-xs font-bold" style="cursor: pointer;">CLEAR</span>
+                </div>
+                <div id="recent-list" class="text-xs" style="color: #595c5e; text-align: center; padding: 20px; border: 2px dashed #e5e9eb; border-radius: 12px;">
+                    No recent scans. Press scan to begin.
+                </div>
+            </div>
+
+            <div style="margin-top: auto; padding-top: 20px;">
+                <div style="background: #f1f2ff; padding: 12px; border-radius: 12px; border: 1px solid #d1ccff; display: flex; gap: 10px;">
+                    <span class="material-symbols-outlined text-primary">lightbulb</span>
+                    <div class="text-xs">
+                        <div class="font-bold text-primary">Pro Tip</div>
+                        <div style="color: #4037a0; margin-top: 2px;">Press <kbd>Alt + P</kbd> to pick individual colors instantly.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- COLORS VIEW -->
+        <div id="colors-view" class="view-content">
+            <div class="font-bold" style="margin-bottom: 4px;">Extracted Palette</div>
+            <div class="text-xs" style="color: #595c5e; margin-bottom: 16px;">Select colors to save to your collection.</div>
+            
+            <div class="color-grid" id="color-results-grid">
+                <!-- Dynamically filled -->
+            </div>
+
+            <div id="color-actions" style="margin-top: 24px; display: flex; flex-direction: column; gap: 8px;">
+                <div style="display: flex; gap: 8px;">
+                    <button id="select-all" style="background:#f5f7f9; color:#2c2f31; border:1px solid #e5e7eb; padding: 14px; border-radius: 12px; font-weight: 600; cursor: pointer; flex: 1;">Select All</button>
+                    <button id="save-selected" class="bg-primary" style="color:white; border:none; padding: 14px; border-radius: 12px; font-weight: 600; cursor: pointer; flex: 2;">Save Selected Colors</button>
+                </div>
+                <button id="export-css" style="background:#dfe3e6; color:#2c2f31; border:none; padding: 14px; border-radius: 12px; font-weight: 600; cursor: pointer;">Export as CSS</button>
+                <button id="copy-all" style="background:#0050d4; color:white; border:none; padding: 14px; border-radius: 12px; font-weight: 600; cursor: pointer; display: none;">Copy All Colors</button>
+            </div>
+        </div>
+
+        <!-- FONTS VIEW -->
+        <div id="fonts-view" class="view-content">
+            <div class="font-bold" style="margin-bottom: 4px;">Detected Fonts</div>
+            <div class="text-xs" style="color: #595c5e; margin-bottom: 16px;">Typography found in the current viewport.</div>
+            
+            <div id="fonts-results-list">
+                <!-- Dynamically filled -->
+            </div>
+        </div>
+
+        <!-- SAVED VIEW -->
+        <div id="saved-view" class="view-content">
+            <div class="font-bold" style="margin-bottom: 16px;">Your Workspaces</div>
+            <div style="border: 2px dashed #abadaf; padding: 30px; border-radius: 16px; text-align: center; opacity: 0.6;">
+                <span class="material-symbols-outlined" style="font-size: 40px; margin-bottom: 8px;">folder_open</span>
+                <div class="text-sm font-bold">No saved sets yet</div>
+                <div class="text-xs">Save colors from your scans to see them here.</div>
+            </div>
+        </div>
+
+    </main>
+
+    <nav>
+        <div class="nav-item active" data-target="scan">
+            <span class="material-symbols-outlined">search</span>
+            <span>Scan</span>
+        </div>
+        <div class="nav-item" data-target="colors">
+            <span class="material-symbols-outlined">palette</span>
+            <span>Colors</span>
+        </div>
+        <div class="nav-item" data-target="fonts">
+            <span class="material-symbols-outlined">format_size</span>
+            <span>Fonts</span>
+        </div>
+        <div class="nav-item" data-target="saved">
+            <span class="material-symbols-outlined">bookmark</span>
+            <span>Saved</span>
+        </div>
+    </nav>
+
+    <script src="popup.js"></script>
 </body>
 </html>
