@@ -7,7 +7,6 @@ chrome.commands.onCommand.addListener((command) => {
           func: () => {
             async function startEyeDropper() {
               if (!window.EyeDropper) {
-                console.log('EyeDropper API not supported, falling back to DOM approach');
                 startDOMPicker();
                 return;
               }
@@ -15,14 +14,13 @@ chrome.commands.onCommand.addListener((command) => {
               try {
                 const eyeDropper = new EyeDropper();
                 const result = await eyeDropper.open();
-                console.log('EyeDropper color (shortcut):', result.sRGBHex);
                 
                 chrome.runtime.sendMessage({ 
                   action: "colorPicked", 
                   color: result.sRGBHex 
                 });
               } catch (e) {
-                console.log('EyeDropper cancelled or failed:', e);
+                // EyeDropper cancelled or failed - silently handle
               }
             }
 
@@ -114,7 +112,6 @@ chrome.commands.onCommand.addListener((command) => {
                     action: "colorPicked", 
                     color: bgColor 
                   });
-                  console.log('DOM picker color (shortcut):', bgColor);
                 }
 
                 // Cleanup
@@ -142,8 +139,6 @@ chrome.commands.onCommand.addListener((command) => {
               document.addEventListener('mousemove', handleMouseMove);
               document.addEventListener('click', handleClick, { once: true });
               document.addEventListener('keydown', handleKeyPress);
-              
-              console.log('DOM color picker started (shortcut) - click to pick, ESC to cancel');
             }
 
             startEyeDropper();

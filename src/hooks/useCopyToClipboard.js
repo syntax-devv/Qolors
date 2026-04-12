@@ -14,7 +14,6 @@ export const useCopyToClipboard = () => {
         setShowNotification(false)
       }, 3000)
     } catch (err) {
-      console.error('Failed to copy text: ', err)
       setNotificationMessage('Failed to copy')
       setShowNotification(true)
       

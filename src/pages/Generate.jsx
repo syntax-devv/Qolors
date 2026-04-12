@@ -201,7 +201,6 @@ function Generate() {
           addToast('Invalid color format in URL');
         }
       } catch (error) {
-        console.error('URL parsing error:', error);
         addToast('Failed to load palette from URL');
       }
     }
@@ -212,8 +211,8 @@ function Generate() {
       if (!isAuthenticated) {
         addToast('Please sign in to save palettes!');
         dispatch(openAuthModal());
+        return;
       }
-      return;
     }
     
     setIsSaving(true);
@@ -226,7 +225,6 @@ function Generate() {
       
       addToast('Palette saved to your collection!', 'success');
     } catch (error) {
-      console.error('Save palette error:', error);
       addToast('Failed to save palette. Please try again.', 'error');
     } finally {
       setIsSaving(false);
@@ -238,8 +236,8 @@ function Generate() {
       if (!isAuthenticated) {
         addToast('Please sign in to save palettes!');
         dispatch(openAuthModal());
+        return;
       }
-      return;
     }
     
     if (!editingPaletteId) {
@@ -265,7 +263,6 @@ function Generate() {
         navigate('/explore');
       }, 1000);
     } catch (error) {
-      console.error('Update palette error:', error);
       addToast(typeof error === 'string' ? error : 'Failed to update palette. Please try again.', 'error');
     } finally {
       setIsSaving(false);

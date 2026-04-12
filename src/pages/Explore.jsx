@@ -41,7 +41,9 @@ const ExploreCard = ({ paletteData, isAuthenticated, currentUser }) => {
     if (paletteData.id) {
       supabase.rpc('increment_save_count', { palette_id: paletteData.id })
         .then(({ error }) => {
-          if (error) console.error('Error incrementing save count:', error);
+          if (error) {
+            // Error incrementing save count
+          }
         });
     }
   };
@@ -138,7 +140,6 @@ function Explore() {
       if (error) throw error;
       setPalettes(data);
     } catch (err) {
-      console.error('Error fetching palettes:', err);
       addToast('Failed to load palettes from cloud', 'error');
     } finally {
       setLoading(false);

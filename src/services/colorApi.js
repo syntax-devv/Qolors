@@ -173,7 +173,6 @@ export const getColorName = async (hex) => {
     // Fallback to our local color matching if API fails
     return findClosestColor(hex);
   } catch (error) {
-    console.error('Color API error:', error);
     // Fallback to our local color matching if API fails
     return findClosestColor(hex);
   }

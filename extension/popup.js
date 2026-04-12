@@ -8,6 +8,11 @@ class QolorsCollector {
     this.savedCollections = [];
     this.isLoadedCollection = false;
     this.loadedCollectionName = '';
+    
+    // Performance optimization: Cache for expensive operations
+    this.renderCache = new Map();
+    this.debounceTimers = new Map();
+    
     this.init();
   }
 
@@ -252,56 +257,107 @@ class QolorsCollector {
     return card;
   }
 
+  // Debounced render function for performance
+  debouncedRender(key, renderFunc, delay = 100) {
+    if (this.debounceTimers.has(key)) {
+      clearTimeout(this.debounceTimers.get(key));
+    }
+    
+    const timer = setTimeout(() => {
+      renderFunc();
+      this.debounceTimers.delete(key);
+    }, delay);
+    
+    this.debounceTimers.set(key, timer);
+  }
+
   renderColors() {
+    const cacheKey = `colors_${this.extractedData.colors.length}_${this.currentView}`;
+    
+    // Check cache first
+    if (this.renderCache.has(cacheKey)) {
+      const container = document.getElementById('color-results-grid');
+      if (container) {
+        container.innerHTML = this.renderCache.get(cacheKey);
+        this.attachColorEventListeners();
+        return;
+      }
+    }
+
     const container = document.getElementById('color-results-grid');
     container.innerHTML = '';
 
+    if (!this.extractedData.colors.length) {
+      const emptyHTML = `
+        <div class="text-center" style="padding: 40px; color: #595c5e;">
+          <span class="material-symbols-outlined" style="font-size: 40px; margin-bottom: 8px; display: block;">palette</span>
+          <p class="text-sm">No colors detected yet. Scan the page to extract colors.</p>
+        </div>
+      `;
+      container.innerHTML = emptyHTML;
+      this.renderCache.set(cacheKey, emptyHTML);
+      return;
+    }
+
+    let html = '';
     this.extractedData.colors.forEach(color => {
-      const colorDiv = document.createElement('div');
-      colorDiv.style.display = 'flex';
-      colorDiv.style.flexDirection = 'column';
-      colorDiv.style.gap = '4px';
-      colorDiv.style.position = 'relative';
+      const isSelected = this.selectedColors.has(color);
       
       if (this.isLoadedCollection) {
-        colorDiv.innerHTML = `
-          <div class="color-swatch shadow-sm" style="background-color: ${color}; cursor: pointer;" data-color="${color}">
-            <div class="copy-icon" style="position: absolute; top: 2px; right: 2px; background: rgba(0,0,0,0.7); color: white; border-radius: 50%; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; font-size: 10px; opacity: 0; transition: opacity 0.2s;">
-              <span class="material-symbols-outlined" style="font-size: 12px;">content_copy</span>
+        html += `
+          <div class="color-item" style="display: flex; flex-direction: column; gap: 4px; position: relative;">
+            <div class="color-swatch shadow-sm" style="background-color: ${color}; cursor: pointer;" data-color="${color}">
+              <div class="copy-icon" style="position: absolute; top: 2px; right: 2px; background: rgba(0,0,0,0.7); color: white; border-radius: 50%; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; font-size: 10px; opacity: 0; transition: opacity 0.2s;">
+                <span class="material-symbols-outlined" style="font-size: 12px;">content_copy</span>
+              </div>
             </div>
+            <div class="text-xs" style="font-family: monospace; text-align: center;">${color.toUpperCase()}</div>
           </div>
-          <div class="text-xs" style="font-family: monospace; text-align: center;">${color.toUpperCase()}</div>
         `;
-        
-        const swatch = colorDiv.querySelector('.color-swatch');
-        const copyIcon = colorDiv.querySelector('.copy-icon');
+      } else {
+        html += `
+          <div class="color-item" style="display: flex; flex-direction: column; gap: 4px; position: relative;">
+            <div class="color-swatch shadow-sm ${isSelected ? 'selected' : ''}" style="background-color: ${color}" data-color="${color}"></div>
+            <div class="text-xs" style="font-family: monospace; text-align: center;">${color.toUpperCase()}</div>
+          </div>
+        `;
+      }
+    });
+    
+    container.innerHTML = html;
+    this.renderCache.set(cacheKey, html);
+    this.attachColorEventListeners();
+  }
+
+  attachColorEventListeners() {
+    const container = document.getElementById('color-results-grid');
+    const swatches = container.querySelectorAll('.color-swatch');
+    
+    swatches.forEach(swatch => {
+      const color = swatch.dataset.color;
+      if (!color) return;
+      
+      if (this.isLoadedCollection) {
+        const copyIcon = swatch.querySelector('.copy-icon');
         
         swatch.addEventListener('mouseenter', () => {
-          copyIcon.style.opacity = '1';
+          if (copyIcon) copyIcon.style.opacity = '1';
         });
         
         swatch.addEventListener('mouseleave', () => {
-          copyIcon.style.opacity = '0';
+          if (copyIcon) copyIcon.style.opacity = '0';
         });
         
         swatch.addEventListener('click', () => {
           this.copyToClipboard(color);
           this.showNotification(`Copied ${color}`);
         });
-        
       } else {
-        colorDiv.innerHTML = `
-          <div class="color-swatch shadow-sm" style="background-color: ${color}" data-color="${color}"></div>
-          <div class="text-xs" style="font-family: monospace; text-align: center;">${color.toUpperCase()}</div>
-        `;
-        
-        const swatch = colorDiv.querySelector('.color-swatch');
         swatch.addEventListener('click', () => {
           swatch.classList.toggle('selected');
           this.toggleColorSelection(color);
         });
       }
-      container.appendChild(colorDiv);
     });
   }
 

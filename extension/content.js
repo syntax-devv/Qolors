@@ -175,7 +175,7 @@ function enableEyedropper() {
         ctx.strokeRect(70, 70, 10, 10);
       }
     } catch (err) {
-      console.log('Eyedropper error:', err);
+      // Eyedropper error - silently handle
     }
   }
   
@@ -209,13 +209,38 @@ function enableEyedropper() {
   }
   
   function disableEyedropper() {
+    if (!isActive) return;
+    
     isActive = false;
-    cursor.style.display = 'none';
-    magnifier.style.display = 'none';
+    
+    // Clean up DOM elements
+    if (cursor && cursor.parentNode) {
+      cursor.parentNode.removeChild(cursor);
+    }
+    if (magnifier && magnifier.parentNode) {
+      magnifier.parentNode.removeChild(magnifier);
+    }
+    
+    // Clean up canvas
+    if (magnifierCanvas) {
+      const ctx = magnifierCanvas.getContext('2d');
+      if (ctx) {
+        ctx.clearRect(0, 0, magnifierCanvas.width, magnifierCanvas.height);
+      }
+    }
+    
+    // Reset body cursor
     document.body.style.cursor = '';
+    
+    // Remove event listeners to prevent memory leaks
     document.removeEventListener('mousemove', moveEyedropper);
     document.removeEventListener('click', pickColor);
     document.removeEventListener('keydown', handleEscape);
+    
+    // Clear references
+    cursor = null;
+    magnifier = null;
+    magnifierCanvas = null;
   }
   
   function handleEscape(e) {

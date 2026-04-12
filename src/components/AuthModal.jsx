@@ -19,14 +19,12 @@ const AuthModal = () => {
       });
 
       if (error) {
-        console.error(`Error signing in with ${provider}:`, error);
         return;
       }
 
       // The auth state change will be handled by the auth listener
-      console.log(`Signing in with ${provider}...`);
     } catch (error) {
-      console.error(`Unexpected error with ${provider}:`, error);
+      // Handle unexpected error with provider
     }
   };
 
